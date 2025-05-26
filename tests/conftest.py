@@ -31,9 +31,14 @@ def mock_httpx_client() -> Generator[Mock, None, None]:
 
 
 @pytest.fixture
-def hex_client(test_config: HexConfig, mock_httpx_client: Mock) -> HexClient:
+def hex_client(test_config: HexConfig) -> Generator[HexClient, None, None]:
     """Create a HexClient instance for testing."""
-    return HexClient(config=test_config)
+    with patch("hex_api.client.httpx.Client") as mock_client_class:
+        mock_client_instance = Mock()
+        mock_client_class.return_value = mock_client_instance
+
+        client = HexClient(config=test_config)
+        yield client
 
 
 @pytest.fixture

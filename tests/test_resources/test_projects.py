@@ -41,6 +41,9 @@ class TestProjectsResource:
             include_sharing=True,
         )
 
+        assert isinstance(project, Project)
+        assert project.sharing is not None
+
         hex_client._client.request.assert_called_once_with(
             "GET",
             "/v1/projects/12345678-1234-1234-1234-123456789012",
