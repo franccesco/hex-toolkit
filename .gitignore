@@ -48,6 +48,7 @@ coverage.xml
 Thumbs.db
 
 # Project specific
+.envrc
 .env
 .env.local
 *.log
