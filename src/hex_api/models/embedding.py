@@ -28,7 +28,7 @@ class EmbeddingRequest(HexBaseModel):
     """Request body for creating an embedded URL."""
 
     hex_user_attributes: Optional[Dict[str, str]] = Field(
-        None, 
+        None,
         alias="hexUserAttributes",
         description="Map of attributes to populate hex_user_attributes"
     )

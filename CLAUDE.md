@@ -27,17 +27,20 @@ uv run pytest --cov=src/hex_api --cov-report=html
 
 ### Code Quality
 ```bash
-# Format code with Black
-uv run black src tests
+# Format code with Ruff
+uv run ruff format src tests
 
 # Lint with Ruff
 uv run ruff check src tests
+
+# Fix linting issues automatically (when possible)
+uv run ruff check --fix src tests
 
 # Type check with mypy
 uv run mypy src
 
 # Run all checks (format, lint, type check)
-uv run black src tests && uv run ruff check src tests && uv run mypy src
+uv run ruff format src tests && uv run ruff check src tests && uv run mypy src
 ```
 
 ## Architecture

@@ -7,7 +7,6 @@ from hex_api.models.embedding import (
     DisplayOptions,
     EmbeddingRequest,
     EmbeddingResponse,
-    ThemeType,
 )
 from hex_api.resources.base import BaseResource
 

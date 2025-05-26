@@ -1,7 +1,6 @@
 """Configuration for the Hex API SDK."""
 
 import os
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -51,18 +50,18 @@ class HexConfig(BaseModel):
     def from_env(cls, **overrides) -> "HexConfig":
         """Create config from environment variables with optional overrides."""
         config_data = {}
-        
+
         # Check for API key in environment
         api_key = overrides.get("api_key") or os.getenv("HEX_API_KEY")
         if api_key:
             config_data["api_key"] = api_key
-        
+
         # Check for base URL in environment
         base_url = overrides.get("base_url") or os.getenv("HEX_API_BASE_URL")
         if base_url:
             config_data["base_url"] = base_url
-        
+
         # Apply any other overrides
         config_data.update({k: v for k, v in overrides.items() if v is not None})
-        
+
         return cls(**config_data)

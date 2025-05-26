@@ -1,6 +1,6 @@
 """Base resource class for the Hex API SDK."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Type, TypeVar
 
 from pydantic import BaseModel
 

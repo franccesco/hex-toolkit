@@ -32,7 +32,6 @@ dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "pytest-mock>=3.11.0",
-    "black>=23.0.0",
     "ruff>=0.1.0",
     "mypy>=1.5.0",
     "pre-commit>=3.3.0",
@@ -72,11 +71,6 @@ addopts = [
     "--verbose",
 ]
 
-[tool.black]
-line-length = 88
-target-version = ["py38", "py39", "py310", "py311", "py312"]
-include = '\.pyi?$'
-
 [tool.ruff]
 line-length = 88
 target-version = "py38"
@@ -94,10 +88,20 @@ select = [
     "SIM",  # flake8-simplify
 ]
 ignore = [
-    "E501",  # line too long (handled by black)
+    "E501",  # line too long (handled by formatter)
     "B008",  # do not perform function calls in argument defaults
     "B905",  # strict= parameter of zip
 ]
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+# Indent with spaces (same as Black default)
+indent-style = "space"
+# Preserve quotes in type annotations
+skip-magic-trailing-comma = false
+# Line ending style
+line-ending = "auto"
 
 [tool.mypy]
 python_version = "3.8"

@@ -75,7 +75,7 @@ class ProjectsResource(BaseResource):
             "includeSharing": include_sharing,
             "limit": limit,
         }
-        
+
         if statuses:
             params["statuses"] = statuses
         if categories:
@@ -130,7 +130,7 @@ class ProjectsResource(BaseResource):
             use_cached_sql_results=use_cached_sql_results,
             view_id=view_id,
         )
-        
+
         data = self._post(
             f"/v1/projects/{project_id}/runs",
             json=request.model_dump(exclude_none=True, by_alias=True),

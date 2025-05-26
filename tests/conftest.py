@@ -1,11 +1,10 @@
 """Pytest configuration and fixtures."""
 
-import os
 from typing import Generator
 from unittest.mock import Mock, patch
 
-import pytest
 import httpx
+import pytest
 
 from hex_api import HexClient
 from hex_api.config import HexConfig

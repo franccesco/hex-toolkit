@@ -53,7 +53,7 @@ class RunsResource(BaseResource):
             "limit": limit,
             "offset": offset,
         }
-        
+
         if status_filter:
             params["statusFilter"] = status_filter.value
 

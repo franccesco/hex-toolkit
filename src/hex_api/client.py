@@ -1,6 +1,6 @@
 """Main client for the Hex API SDK."""
 
-from typing import Optional, Type, TypeVar, Union
+from typing import Optional, TypeVar
 
 import httpx
 
@@ -48,9 +48,9 @@ class HexClient:
                 base_url=base_url,
                 **kwargs,
             )
-        
+
         self.auth = HexAuth(self.config.api_key)
-        
+
         self._client = httpx.Client(
             base_url=self.config.base_url,
             auth=self.auth,
@@ -58,7 +58,7 @@ class HexClient:
             verify=self.config.verify_ssl,
             headers={"User-Agent": "hex-python-sdk/0.1.0"},
         )
-        
+
         # Initialize resources
         self.projects = ProjectsResource(self)
         self.runs = RunsResource(self)
@@ -73,10 +73,10 @@ class HexClient:
     ) -> httpx.Response:
         """Make a request to the API."""
         response = self._client.request(method, path, **kwargs)
-        
+
         if response.status_code >= 400:
             self._handle_response_error(response)
-        
+
         return response
 
     def _handle_response_error(self, response: httpx.Response) -> None:

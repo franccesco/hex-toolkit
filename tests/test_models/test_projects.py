@@ -3,17 +3,15 @@
 from datetime import datetime
 from uuid import UUID
 
-import pytest
-
 from hex_api.models.projects import (
     AccessLevel,
     AnalyticsInfo,
     AppViewsInfo,
+    DayOfWeek,
     Project,
     ProjectList,
     ProjectType,
     ScheduleCadence,
-    DayOfWeek,
 )
 
 
@@ -23,7 +21,7 @@ class TestProjectModels:
     def test_project_model_validation(self, sample_project_data: dict):
         """Test Project model validation."""
         project = Project.model_validate(sample_project_data)
-        
+
         assert isinstance(project.id, UUID)
         assert project.title == "Test Project"
         assert project.description == "A test project"
@@ -46,9 +44,9 @@ class TestProjectModels:
                 "before": None,
             },
         }
-        
+
         project_list = ProjectList.model_validate(data)
-        
+
         assert len(project_list.values) == 1
         assert isinstance(project_list.values[0], Project)
         assert project_list.pagination.after == "cursor123"
@@ -58,13 +56,13 @@ class TestProjectModels:
         """Test enum values."""
         assert ProjectType.PROJECT.value == "PROJECT"
         assert ProjectType.COMPONENT.value == "COMPONENT"
-        
+
         assert AccessLevel.NONE.value == "NONE"
         assert AccessLevel.FULL_ACCESS.value == "FULL_ACCESS"
-        
+
         assert ScheduleCadence.DAILY.value == "DAILY"
         assert ScheduleCadence.CUSTOM.value == "CUSTOM"
-        
+
         assert DayOfWeek.MONDAY.value == "MONDAY"
         assert DayOfWeek.SUNDAY.value == "SUNDAY"
 
@@ -76,9 +74,9 @@ class TestProjectModels:
             "lastSevenDays": 25,
             "allTime": 1000,
         }
-        
+
         app_views = AppViewsInfo.model_validate(data)
-        
+
         assert app_views.last_thirty_days == 100
         assert app_views.last_fourteen_days == 50
         assert app_views.last_seven_days == 25
@@ -93,7 +91,7 @@ class TestProjectModels:
             "createdAt": "2024-01-01T00:00:00Z",
             "publicWeb": {"access": "NONE"},
         })
-        
+
         project = Project.model_validate(project_data)
         assert isinstance(project.last_edited_at, datetime)
         assert isinstance(project.created_at, datetime)
