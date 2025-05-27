@@ -53,7 +53,7 @@ hex projects list --columns id,name,creator,last_viewed_at,app_views
 # Show all available columns
 hex projects list --columns id,name,status,owner,created_at,creator,last_viewed_at,app_views
 
-# Get project details
+# Get comprehensive project details
 hex projects get PROJECT_ID
 
 # Get project with sharing info
@@ -186,3 +186,47 @@ Status: COMPLETED
 Started: 2024-01-01T10:00:00
 Ended: 2024-01-01T10:05:00
 ```
+
+### Comprehensive Project Details
+
+The `projects get` command displays all available project information in an organized format:
+
+```bash
+hex projects get PROJECT_ID --include-sharing
+```
+
+This command shows:
+
+**📋 Basic Information**
+- Project ID, type, description
+- Status with color coding
+- Published version
+
+**👥 People**
+- Creator and owner email addresses
+
+**🕐 Timestamps**  
+- Created, last edited, last published dates
+- Archived/trashed dates (if applicable)
+- Relative time display (e.g., "2h ago", "yesterday")
+
+**📊 Analytics**
+- Last viewed timestamp
+- App view counts (all time, 30d, 7d)
+- Published results update time
+
+**🏷️ Categories**
+- Project categories with descriptions
+
+**✅ Reviews**
+- Whether reviews are required
+
+**📅 Schedules**
+- Enabled schedules with cadence details
+- Schedule timing and timezone info
+
+**🔒 Sharing & Permissions** (with --include-sharing)
+- Workspace, public web, and support access levels
+- User permissions (first 5 shown)
+- Group and collection permissions
+- Color-coded access levels (None, App Only, Can View, Can Edit, Full Access)

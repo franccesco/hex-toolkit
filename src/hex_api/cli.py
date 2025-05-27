@@ -6,6 +6,7 @@ from typing import Optional
 
 import typer
 from rich.console import Console
+from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
@@ -233,43 +234,256 @@ def get_project(
         client = get_client()
         project = client.projects.get(project_id, include_sharing=include_sharing)
 
-        # Display project details
-        console.print("\n[bold]Project Details[/bold]")
-        console.print(f"ID: [cyan]{project.get('id', project_id)}[/cyan]")
-
-        # Try different field names for project name
-        name = project.get("title", project.get("name", "N/A"))
-        if name and name != "N/A":
+        # Extract basic information
+        name = project.get("title", project.get("name", "Untitled"))
+        if name:
             name = name.strip()
-        console.print(f"Name: [green]{name}[/green]")
 
-        # Handle status which might be a dict or string
-        status = project.get("status", "N/A")
-        if isinstance(status, dict):
-            status = status.get("name", str(status))
-        console.print(f"Status: [yellow]{status}[/yellow]")
+        project_type = project.get("type", "PROJECT")
 
-        description = project.get("description", "N/A")
-        if description and description != "N/A":
-            # Remove all whitespace including newlines and replace with single spaces
+        # Create main panel with project name
+        console.print()
+        console.print(Panel(f"[bold cyan]{name}[/bold cyan]", expand=False))
+
+        # Basic Information Section
+        console.print("\n[bold]📋 Basic Information[/bold]")
+        info_table = Table(show_header=False, box=None, padding=(0, 2))
+        info_table.add_column(style="dim")
+        info_table.add_column()
+
+        info_table.add_row("ID", f"[cyan]{project.get('id', project_id)}[/cyan]")
+        info_table.add_row("Type", project_type)
+
+        # Description
+        description = project.get("description")
+        if description:
+            # Clean up description
             description = " ".join(description.split())
-        console.print(f"Description: {description}")
+            if len(description) > 100:
+                description = description[:97] + "..."
+            info_table.add_row("Description", description)
 
-        # Try different field names for owner
-        owner = "N/A"
+        # Status
+        status = project.get("status")
+        if isinstance(status, dict):
+            status_name = status.get("name", "Unknown")
+        else:
+            status_name = str(status) if status else "Unknown"
+
+        status_color = "green" if status_name == "Published" else "yellow"
+        info_table.add_row("Status", f"[{status_color}]{status_name}[/{status_color}]")
+
+        # Published version
+        published_version = project.get("publishedVersion")
+        if published_version:
+            info_table.add_row("Published Version", str(published_version))
+
+        console.print(info_table)
+
+        # People Section
+        console.print("\n[bold]👥 People[/bold]")
+        people_table = Table(show_header=False, box=None, padding=(0, 2))
+        people_table.add_column(style="dim")
+        people_table.add_column()
+
+        # Creator
+        if project.get("creator"):
+            creator_email = project["creator"].get("email", "Unknown")
+            people_table.add_row("Creator", creator_email)
+
+        # Owner
+        owner_email = "Unknown"
         if project.get("owner"):
-            owner = project["owner"].get("email", "N/A")
-        if owner == "N/A":
-            owner = project.get("ownerEmail", "N/A")
-        console.print(f"Owner: {owner}")
-        console.print(f"Created: {project.get('createdAt', '')[:10]}")
-        console.print(f"Last Edited: {project.get('lastEditedAt', '')[:10]}")
-        console.print(f"Published Version: {project.get('publishedVersion', 'N/A')}")
+            owner_email = project["owner"].get("email", "Unknown")
+        elif project.get("ownerEmail"):
+            owner_email = project.get("ownerEmail")
+        people_table.add_row("Owner", owner_email)
 
+        console.print(people_table)
+
+        # Timestamps Section
+        console.print("\n[bold]🕐 Timestamps[/bold]")
+        time_table = Table(show_header=False, box=None, padding=(0, 2))
+        time_table.add_column(style="dim")
+        time_table.add_column()
+
+        # Format timestamps
+        created_at = project.get("createdAt", "")
+        if created_at:
+            time_table.add_row("Created", _format_timestamp(created_at))
+
+        last_edited = project.get("lastEditedAt", "")
+        if last_edited:
+            time_table.add_row("Last Edited", _format_timestamp(last_edited))
+
+        last_published = project.get("lastPublishedAt")
+        if last_published:
+            time_table.add_row("Last Published", _format_timestamp(last_published))
+
+        archived_at = project.get("archivedAt")
+        if archived_at:
+            time_table.add_row(
+                "Archived", f"[red]{_format_timestamp(archived_at)}[/red]"
+            )
+
+        trashed_at = project.get("trashedAt")
+        if trashed_at:
+            time_table.add_row("Trashed", f"[red]{_format_timestamp(trashed_at)}[/red]")
+
+        console.print(time_table)
+
+        # Analytics Section
+        analytics = project.get("analytics")
+        if analytics:
+            console.print("\n[bold]📊 Analytics[/bold]")
+            analytics_table = Table(show_header=False, box=None, padding=(0, 2))
+            analytics_table.add_column(style="dim")
+            analytics_table.add_column()
+
+            # Last viewed
+            last_viewed = analytics.get("lastViewedAt")
+            if last_viewed:
+                analytics_table.add_row("Last Viewed", _format_timestamp(last_viewed))
+
+            # Published results updated
+            pub_results = analytics.get("publishedResultsUpdatedAt")
+            if pub_results:
+                analytics_table.add_row(
+                    "Results Updated", _format_timestamp(pub_results)
+                )
+
+            # App views
+            app_views = analytics.get("appViews")
+            if app_views:
+                views_str = []
+                if app_views.get("allTime"):
+                    views_str.append(f"All time: {app_views['allTime']:,}")
+                if app_views.get("lastThirtyDays"):
+                    views_str.append(f"30d: {app_views['lastThirtyDays']:,}")
+                if app_views.get("lastSevenDays"):
+                    views_str.append(f"7d: {app_views['lastSevenDays']:,}")
+
+                if views_str:
+                    analytics_table.add_row("App Views", " | ".join(views_str))
+
+            if analytics_table.row_count > 0:
+                console.print(analytics_table)
+
+        # Categories Section
+        categories = project.get("categories", [])
+        if categories:
+            console.print("\n[bold]🏷️  Categories[/bold]")
+            for cat in categories:
+                cat_name = cat.get("name", "Unknown")
+                cat_desc = cat.get("description", "")
+                if cat_desc:
+                    console.print(f"  • {cat_name}: [dim]{cat_desc}[/dim]")
+                else:
+                    console.print(f"  • {cat_name}")
+
+        # Reviews Section
+        reviews = project.get("reviews")
+        if reviews:
+            console.print("\n[bold]✅ Reviews[/bold]")
+            required = reviews.get("required", False)
+            console.print(f"  Reviews Required: {'Yes' if required else 'No'}")
+
+        # Schedules Section
+        schedules = project.get("schedules", [])
+        if schedules:
+            console.print("\n[bold]📅 Schedules[/bold]")
+            for i, schedule in enumerate(schedules, 1):
+                if not schedule.get("enabled"):
+                    continue
+
+                cadence = schedule.get("cadence", "Unknown")
+                console.print(f"\n  Schedule {i}: [yellow]{cadence}[/yellow]")
+
+                # Show schedule details based on cadence
+                if cadence == "HOURLY" and schedule.get("hourly"):
+                    details = schedule["hourly"]
+                    console.print(
+                        f"    Runs at: {details.get('minute', 0)} minutes past each hour"
+                    )
+                    console.print(f"    Timezone: {details.get('timezone', 'UTC')}")
+                elif cadence == "DAILY" and schedule.get("daily"):
+                    details = schedule["daily"]
+                    console.print(
+                        f"    Runs at: {details.get('hour', 0):02d}:{details.get('minute', 0):02d}"
+                    )
+                    console.print(f"    Timezone: {details.get('timezone', 'UTC')}")
+                elif cadence == "WEEKLY" and schedule.get("weekly"):
+                    details = schedule["weekly"]
+                    console.print(f"    Day: {details.get('dayOfWeek', 'Unknown')}")
+                    console.print(
+                        f"    Time: {details.get('hour', 0):02d}:{details.get('minute', 0):02d}"
+                    )
+                    console.print(f"    Timezone: {details.get('timezone', 'UTC')}")
+                elif cadence == "MONTHLY" and schedule.get("monthly"):
+                    details = schedule["monthly"]
+                    console.print(f"    Day: {details.get('day', 1)}")
+                    console.print(
+                        f"    Time: {details.get('hour', 0):02d}:{details.get('minute', 0):02d}"
+                    )
+                    console.print(f"    Timezone: {details.get('timezone', 'UTC')}")
+                elif cadence == "CUSTOM" and schedule.get("custom"):
+                    details = schedule["custom"]
+                    console.print(f"    Cron: {details.get('cron', 'Unknown')}")
+                    console.print(f"    Timezone: {details.get('timezone', 'UTC')}")
+
+        # Sharing Section (if requested)
         if include_sharing and project.get("sharing"):
-            console.print("\n[bold]Sharing Information[/bold]")
-            console.print(f"Visibility: {project['sharing'].get('visibility')}")
-            console.print(f"Access Level: {project['sharing'].get('accessLevel')}")
+            console.print("\n[bold]🔒 Sharing & Permissions[/bold]")
+            sharing = project["sharing"]
+
+            # Workspace access
+            if sharing.get("workspace"):
+                access = sharing["workspace"].get("access", "NONE")
+                console.print("\n  [bold]Workspace[/bold]")
+                console.print(f"    Access Level: {_format_access_level(access)}")
+
+            # Public web access
+            if sharing.get("publicWeb"):
+                access = sharing["publicWeb"].get("access", "NONE")
+                console.print("\n  [bold]Public Web[/bold]")
+                console.print(f"    Access Level: {_format_access_level(access)}")
+
+            # Support access
+            if sharing.get("support"):
+                access = sharing["support"].get("access", "NONE")
+                console.print("\n  [bold]Support[/bold]")
+                console.print(f"    Access Level: {_format_access_level(access)}")
+
+            # Users
+            users = sharing.get("users", [])
+            if users:
+                console.print(f"\n  [bold]Users ({len(users)})[/bold]")
+                for user in users[:5]:  # Show first 5
+                    email = user.get("user", {}).get("email", "Unknown")
+                    access = user.get("access", "NONE")
+                    console.print(f"    • {email}: {_format_access_level(access)}")
+                if len(users) > 5:
+                    console.print(f"    ... and {len(users) - 5} more")
+
+            # Groups
+            groups = sharing.get("groups", [])
+            if groups:
+                console.print(f"\n  [bold]Groups ({len(groups)})[/bold]")
+                for group in groups:
+                    name = group.get("group", {}).get("name", "Unknown")
+                    access = group.get("access", "NONE")
+                    console.print(f"    • {name}: {_format_access_level(access)}")
+
+            # Collections
+            collections = sharing.get("collections", [])
+            if collections:
+                console.print(f"\n  [bold]Collections ({len(collections)})[/bold]")
+                for collection in collections:
+                    name = collection.get("collection", {}).get("name", "Unknown")
+                    access = collection.get("access", "NONE")
+                    console.print(f"    • {name}: {_format_access_level(access)}")
+
+        console.print()  # Empty line at the end
 
     except HexAPIError as e:
         console.print(f"[red]API Error: {e}[/red]")
@@ -277,6 +491,52 @@ def get_project(
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1) from e
+
+
+def _format_timestamp(timestamp: str) -> str:
+    """Format ISO timestamp to a more readable format."""
+    if not timestamp:
+        return "N/A"
+
+    try:
+        # Parse and format the timestamp
+        from datetime import datetime
+
+        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+
+        # Get current time for relative formatting
+        now = datetime.now(dt.tzinfo)
+        diff = now - dt
+
+        # Format with relative time if recent
+        if diff.days == 0:
+            if diff.seconds < 3600:
+                mins = diff.seconds // 60
+                return f"{dt.strftime('%Y-%m-%d %H:%M')} ({mins}m ago)"
+            else:
+                hours = diff.seconds // 3600
+                return f"{dt.strftime('%Y-%m-%d %H:%M')} ({hours}h ago)"
+        elif diff.days == 1:
+            return f"{dt.strftime('%Y-%m-%d %H:%M')} (yesterday)"
+        elif diff.days < 7:
+            return f"{dt.strftime('%Y-%m-%d %H:%M')} ({diff.days}d ago)"
+        else:
+            return dt.strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        # If parsing fails, just return the first part
+        return timestamp[:19]
+
+
+def _format_access_level(access: str) -> str:
+    """Format access level with color."""
+    access_colors = {
+        "NONE": "[red]None[/red]",
+        "APP_ONLY": "[yellow]App Only[/yellow]",
+        "CAN_VIEW": "[cyan]Can View[/cyan]",
+        "CAN_EDIT": "[green]Can Edit[/green]",
+        "FULL_ACCESS": "[bold green]Full Access[/bold green]",
+    }
+    return access_colors.get(access, access)
 
 
 @projects_app.command("run")
