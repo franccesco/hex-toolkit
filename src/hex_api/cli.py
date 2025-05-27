@@ -44,10 +44,44 @@ def list_projects(
     include_trashed: bool = typer.Option(False, help="Include trashed projects"),
     creator_email: Optional[str] = typer.Option(None, help="Filter by creator email"),
     owner_email: Optional[str] = typer.Option(None, help="Filter by owner email"),
+    sort: Optional[str] = typer.Option(
+        None,
+        help="Sort by field. Use 'created_at', 'last_edited_at', or 'last_published_at'. "
+        "Prefix with '-' for descending order (e.g., '-created_at')",
+    ),
 ):
     """List all viewable projects."""
     try:
         client = get_client()
+
+        # Parse sort option
+        sort_by = None
+        sort_direction = None
+        if sort:
+            # Check if it starts with '-' for descending order
+            if sort.startswith("-"):
+                sort_direction = "DESC"
+                sort_field = sort[1:]  # Remove the '-' prefix
+            else:
+                sort_direction = "ASC"
+                sort_field = sort
+
+            # Map CLI field names to API field names
+            sort_field_map = {
+                "created_at": "CREATED_AT",
+                "last_edited_at": "LAST_EDITED_AT",
+                "last_published_at": "LAST_PUBLISHED_AT",
+            }
+
+            if sort_field in sort_field_map:
+                sort_by = sort_field_map[sort_field]
+            else:
+                console.print(
+                    f"[red]Error: Invalid sort field '{sort_field}'. "
+                    f"Valid options are: created_at, last_edited_at, last_published_at[/red]"
+                )
+                raise typer.Exit(1)
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -60,6 +94,8 @@ def list_projects(
                 include_trashed=include_trashed,
                 creator_email=creator_email,
                 owner_email=owner_email,
+                sort_by=sort_by,
+                sort_direction=sort_direction,
             )
 
         projects = response.get("values", [])
