@@ -1,0 +1,158 @@
+# Hex API CLI
+
+The Hex API SDK includes a command-line interface (CLI) for managing projects and runs directly from your terminal.
+
+## Installation
+
+Install the SDK with CLI dependencies:
+
+```bash
+pip install hex-api[cli]
+# or with uv
+uv pip install hex-api[cli]
+```
+
+## Configuration
+
+Set your API key as an environment variable:
+
+```bash
+export HEX_API_KEY="your-api-key-here"
+```
+
+Optionally, set a custom API base URL:
+
+```bash
+export HEX_API_BASE_URL="https://custom.hex.api"
+```
+
+## Usage
+
+### General Commands
+
+```bash
+# Show help
+hex --help
+
+# Show version
+hex --version
+```
+
+### Project Management
+
+```bash
+# List all projects
+hex projects list
+
+# List projects with filters
+hex projects list --limit 10 --include-archived --creator-email user@example.com
+
+# Get project details
+hex projects get PROJECT_ID
+
+# Get project with sharing info
+hex projects get PROJECT_ID --include-sharing
+
+# Run a project
+hex projects run PROJECT_ID
+
+# Run with options
+hex projects run PROJECT_ID --dry-run --wait --poll-interval 10
+
+# Run with input parameters
+hex projects run PROJECT_ID --input-params '{"param1": "value1", "param2": 123}'
+```
+
+### Run Management
+
+```bash
+# Get run status
+hex runs status PROJECT_ID RUN_ID
+
+# List runs for a project
+hex runs list PROJECT_ID
+
+# List runs with filters
+hex runs list PROJECT_ID --limit 20 --status COMPLETED
+
+# Cancel a run
+hex runs cancel PROJECT_ID RUN_ID
+
+# Cancel without confirmation
+hex runs cancel PROJECT_ID RUN_ID --yes
+```
+
+## Features
+
+### Rich Terminal Output
+
+The CLI uses Rich for beautiful terminal output including:
+- Colored output for better readability
+- Progress indicators for long operations
+- Formatted tables for list views
+- Syntax highlighting for JSON responses
+
+### Auto-completion
+
+The CLI supports shell auto-completion. To enable it:
+
+```bash
+# For Bash
+hex --install-completion
+
+# For Zsh
+hex --install-completion
+```
+
+### Pagination
+
+List commands support pagination:
+
+```bash
+# Show first 50 projects
+hex projects list --limit 50
+
+# List runs with offset
+hex runs list PROJECT_ID --limit 10 --offset 20
+```
+
+### Error Handling
+
+The CLI provides clear error messages with trace IDs for debugging:
+
+```
+[red]API Error: Forbidden: You are not authorized to perform this action. (Status: 403) (Trace ID: abc123)[/red]
+```
+
+## Examples
+
+### Running a Project and Waiting for Completion
+
+```bash
+# Run a project and wait for it to complete
+hex projects run PROJECT_ID --wait --poll-interval 5
+```
+
+### Filtering Projects by Owner
+
+```bash
+# List all projects owned by a specific user
+hex projects list --owner-email owner@example.com --limit 100
+```
+
+### Getting Detailed Run Information
+
+```bash
+# Get run status with formatted output
+hex runs status PROJECT_ID RUN_ID
+```
+
+Output:
+```
+Run Status
+Run ID: abc123
+Project ID: xyz789
+Status: COMPLETED
+Started: 2024-01-01T10:00:00
+Ended: 2024-01-01T10:05:00
+```

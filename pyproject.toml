@@ -38,6 +38,9 @@ cli = [
     "rich>=13.5.0",
 ]
 
+[project.scripts]
+hex = "hex_api.cli:app"
+
 [project.urls]
 Homepage = "https://github.com/yourusername/hex-api"
 Documentation = "https://hex-api.readthedocs.io"
