@@ -47,6 +47,12 @@ hex projects list
 # List projects with filters
 hex projects list --limit 10 --include-archived --creator-email user@example.com
 
+# List projects with custom columns
+hex projects list --columns id,name,creator,last_viewed_at,app_views
+
+# Show all available columns
+hex projects list --columns id,name,status,owner,created_at,creator,last_viewed_at,app_views
+
 # Get project details
 hex projects get PROJECT_ID
 
@@ -102,6 +108,30 @@ hex --install-completion
 
 # For Zsh
 hex --install-completion
+```
+
+### Custom Columns
+
+The `projects list` command supports customizable columns via the `--columns` option:
+
+**Available columns:**
+- `id` - Project ID
+- `name` - Project name  
+- `status` - Project status
+- `owner` - Owner email address
+- `created_at` - Creation date
+- `creator` - Creator email address
+- `last_viewed_at` - Last time the project was viewed
+- `app_views` - Total number of app views (all time)
+
+**Default columns:** id, name, status, owner, created_at
+
+```bash
+# Show only ID and name
+hex projects list --columns id,name
+
+# Include creator and analytics data
+hex projects list --columns id,name,creator,last_viewed_at,app_views
 ```
 
 ### Pagination

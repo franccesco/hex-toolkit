@@ -49,6 +49,12 @@ def list_projects(
         help="Sort by field. Use 'created_at', 'last_edited_at', or 'last_published_at'. "
         "Prefix with '-' for descending order (e.g., '-created_at')",
     ),
+    columns: Optional[str] = typer.Option(
+        None,
+        help="Comma-separated list of columns to display. "
+        "Available: id, name, status, owner, created_at, creator, last_viewed_at, app_views. "
+        "Default: id, name, status, owner, created_at",
+    ),
 ):
     """List all viewable projects."""
     try:
@@ -104,41 +110,101 @@ def list_projects(
             console.print("[yellow]No projects found[/yellow]")
             return
 
+        # Parse columns option
+        if columns:
+            selected_columns = [col.strip().lower() for col in columns.split(",")]
+        else:
+            selected_columns = ["id", "name", "status", "owner", "created_at"]
+
+        # Define available columns
+        column_definitions = {
+            "id": ("ID", "cyan"),
+            "name": ("Name", "green"),
+            "status": ("Status", "yellow"),
+            "owner": ("Owner", None),
+            "created_at": ("Created At", None),
+            "creator": ("Creator", None),
+            "last_viewed_at": ("Last Viewed At", None),
+            "app_views": ("App Views (All Time)", None),
+        }
+
         # Create a table for display
         table = Table(title="Hex Projects")
-        table.add_column("ID", style="cyan")
-        table.add_column("Name", style="green")
-        table.add_column("Status", style="yellow")
-        table.add_column("Owner")
-        table.add_column("Created At")
+
+        # Add selected columns to table
+        for col_key in selected_columns:
+            if col_key in column_definitions:
+                col_name, col_style = column_definitions[col_key]
+                table.add_column(col_name, style=col_style)
 
         for project in projects:
-            # Handle status which might be a dict or string
-            status = project.get("status", "")
-            if isinstance(status, dict):
-                status = status.get("name", str(status))
+            # Build row data based on selected columns
+            row_data = []
 
-            # Try different field names for owner
-            owner = ""
-            if project.get("owner"):
-                owner = project["owner"].get("email", "")
-            if not owner:
-                owner = project.get("ownerEmail", "")
+            for col_key in selected_columns:
+                if col_key == "id":
+                    row_data.append(project.get("id", project.get("projectId", "")))
 
-            # Try different field names for project name
-            name = project.get(
-                "title", project.get("name", project.get("displayName", ""))
-            )
-            if name:
-                name = name.strip()
+                elif col_key == "name":
+                    # Try different field names for project name
+                    name = project.get(
+                        "title", project.get("name", project.get("displayName", ""))
+                    )
+                    if name:
+                        name = name.strip()
+                    row_data.append(name)
 
-            table.add_row(
-                project.get("id", project.get("projectId", "")),
-                name,
-                status,
-                owner,
-                project.get("createdAt", "")[:10] if project.get("createdAt") else "",
-            )
+                elif col_key == "status":
+                    # Handle status which might be a dict or string
+                    status = project.get("status", "")
+                    if isinstance(status, dict):
+                        status = status.get("name", str(status))
+                    row_data.append(status)
+
+                elif col_key == "owner":
+                    # Try different field names for owner
+                    owner = ""
+                    if project.get("owner"):
+                        owner = project["owner"].get("email", "")
+                    if not owner:
+                        owner = project.get("ownerEmail", "")
+                    row_data.append(owner)
+
+                elif col_key == "created_at":
+                    row_data.append(
+                        project.get("createdAt", "")[:10]
+                        if project.get("createdAt")
+                        else ""
+                    )
+
+                elif col_key == "creator":
+                    # Get creator email
+                    creator = ""
+                    if project.get("creator"):
+                        creator = project["creator"].get("email", "")
+                    row_data.append(creator)
+
+                elif col_key == "last_viewed_at":
+                    # Get last viewed timestamp from analytics
+                    last_viewed = ""
+                    if project.get("analytics") and project["analytics"].get(
+                        "lastViewedAt"
+                    ):
+                        last_viewed = project["analytics"]["lastViewedAt"][:10]
+                    row_data.append(last_viewed)
+
+                elif col_key == "app_views":
+                    # Get app views all time from analytics
+                    app_views = ""
+                    if project.get("analytics") and project["analytics"].get(
+                        "appViews"
+                    ):
+                        app_views = str(
+                            project["analytics"]["appViews"].get("allTime", "")
+                        )
+                    row_data.append(app_views)
+
+            table.add_row(*row_data)
 
         console.print(table)
 
