@@ -35,6 +35,7 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.5.0",
     "pre-commit>=3.3.0",
+    "jsonschema>=4.0.0",
 ]
 cli = [
     "typer>=0.9.0",
@@ -69,6 +70,10 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--verbose",
+    "-m", "not integration",  # Skip integration tests by default
+]
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
 ]
 
 [tool.ruff]

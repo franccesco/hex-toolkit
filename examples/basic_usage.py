@@ -3,6 +3,7 @@
 import os
 
 from hex_api import HexClient
+from hex_api.models.projects import SortBy, SortDirection
 
 # Initialize the client
 # You can pass the API key directly or set HEX_API_KEY environment variable
@@ -38,8 +39,8 @@ print("\nListing projects with filters:")
 filtered_projects = client.projects.list(
     include_archived=False,
     include_components=True,
-    sort_by="LAST_EDITED_AT",
-    sort_direction="DESC",
+    sort_by=SortBy.LAST_EDITED_AT,
+    sort_direction=SortDirection.DESC,
     limit=10
 )
 

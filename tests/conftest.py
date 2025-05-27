@@ -8,6 +8,7 @@ import pytest
 
 from hex_api import HexClient
 from hex_api.config import HexConfig
+from .openapi_validator import validate_against_spec
 
 
 @pytest.fixture
@@ -69,6 +70,7 @@ def mock_error_response() -> Mock:
 
 # Sample data fixtures
 @pytest.fixture
+@validate_against_spec("/v1/projects/{projectId}", "GET")
 def sample_project_data() -> dict:
     """Sample project data for testing."""
     return {
@@ -109,6 +111,7 @@ def sample_project_data() -> dict:
 
 
 @pytest.fixture
+@validate_against_spec("/v1/projects/{projectId}/runs", "POST")
 def sample_run_data() -> dict:
     """Sample run data for testing."""
     return {
@@ -123,6 +126,7 @@ def sample_run_data() -> dict:
 
 
 @pytest.fixture
+@validate_against_spec("/v1/embedding/createPresignedUrl/{projectId}", "POST")
 def sample_embedding_data() -> dict:
     """Sample embedding data for testing."""
     return {

@@ -8,7 +8,7 @@ from hex_api.models.runs import RunStatus
 
 
 # Example: Run a project and wait for completion
-def run_project_sync():
+def run_project():
     """Run a project synchronously and wait for completion."""
     client = HexClient(api_key=os.getenv("HEX_API_KEY"))
 
@@ -146,7 +146,7 @@ def list_recent_runs():
 
 if __name__ == "__main__":
     # Run synchronous example
-    run_project_sync()
+    run_project()
 
     # Test dry run
     # test_run_with_dry_run()

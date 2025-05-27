@@ -8,21 +8,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # Install package with development dependencies using uv
 uv pip install -e ".[dev]"
-
-# Run all tests
-uv run pytest
-
-# Run tests with verbose output
-uv run pytest -v
-
-# Run a specific test file
-uv run pytest tests/test_client.py
-
-# Run a specific test class or method
-uv run pytest tests/test_client.py::TestHexClient::test_client_initialization
-
-# Run tests with coverage
-uv run pytest --cov=src/hex_api --cov-report=html
 ```
 
 ### Code Quality
@@ -87,11 +72,37 @@ Custom exception hierarchy in `exceptions.py`:
 
 ## Testing
 
-Tests use pytest with comprehensive mocking:
+Tests use pytest with comprehensive mocking and OpenAPI validation:
 - `conftest.py` provides shared fixtures for mock clients and sample data
 - Tests are organized to mirror the source structure
 - Mock HTTP responses are used to avoid actual API calls
 - Each resource and model has dedicated test files
+- **OpenAPI Validation**: Mock data is automatically validated against the OpenAPI spec
+- **Integration Tests**: Optional tests that use the real API (marked with `@pytest.mark.integration`)
+
+### Running Tests
+```bash
+# Run unit tests only (default)
+uv run pytest
+
+# Run tests with verbose output
+uv run pytest -v
+
+# Run a specific test file
+uv run pytest tests/test_client.py
+
+# Run a specific test class or method
+uv run pytest tests/test_client.py::TestHexClient::test_client_initialization
+
+# Run tests with coverage
+uv run pytest --cov=src/hex_api --cov-report=html
+
+# Run all tests including integration tests
+uv run pytest -m ""
+
+# Run only integration tests (requires HEX_API_KEY in environment)
+uv run pytest -m integration
+```
 
 ## API Coverage
 
@@ -102,3 +113,38 @@ The SDK implements these Hex API endpoints:
 - `POST /v1/semantic-models/{id}/ingest` - Semantic models
 
 Note: The semantic models ingest endpoint requires multipart file upload which is not yet implemented.
+
+## Maintaining the SDK
+
+### Workflow for API Updates
+When the Hex API changes, follow this workflow:
+
+1. **Update the OpenAPI spec**:
+   ```bash
+   # Download latest spec or copy from source
+   curl -o hex-openapi.json https://api.hex.tech/openapi.json
+   ```
+
+2. **Run tests to detect breaking changes**:
+   ```bash
+   uv run pytest
+   # Validation errors will show exactly what changed
+   ```
+
+3. **Fix validation errors**:
+   - Update mock data in `conftest.py` for new/changed fields
+   - Update Pydantic models if needed
+   - The error messages tell you exactly what needs fixing
+
+4. **Verify with integration test**:
+   ```bash
+   # Quick smoke test with real API
+   uv run python tests/test_integration.py
+   ```
+
+5. **Run code quality checks**:
+   ```bash
+   uv run ruff format src tests && uv run ruff check src tests && uv run mypy src
+   ```
+
+The OpenAPI validation ensures your SDK stays in sync with the API with minimal effort.
