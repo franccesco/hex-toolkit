@@ -33,6 +33,6 @@ class BaseResource:
         """Make a DELETE request."""
         return self._request("DELETE", path, **kwargs)
 
-    def _parse_response(self, response_data, model=None):
+    def _parse_response(self, response_data):
         """Return response data as-is (dict or list of dicts)."""
         return response_data
