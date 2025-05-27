@@ -93,6 +93,8 @@ def list_projects(
             name = project.get(
                 "title", project.get("name", project.get("displayName", ""))
             )
+            if name:
+                name = name.strip()
 
             table.add_row(
                 project.get("id", project.get("projectId", "")),
@@ -135,6 +137,8 @@ def get_project(
 
         # Try different field names for project name
         name = project.get("title", project.get("name", "N/A"))
+        if name and name != "N/A":
+            name = name.strip()
         console.print(f"Name: [green]{name}[/green]")
 
         # Handle status which might be a dict or string
