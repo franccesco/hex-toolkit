@@ -53,6 +53,12 @@ hex projects list --columns id,name,creator,last_viewed_at,app_views
 # Show all available columns
 hex projects list --columns id,name,status,owner,created_at,creator,last_viewed_at,app_views
 
+# Search for projects by name or description
+hex projects list --search "analytics"
+
+# Search with other filters
+hex projects list --search "data" --include-archived --sort -created_at
+
 # Get comprehensive project details
 hex projects get PROJECT_ID
 
@@ -133,6 +139,26 @@ hex projects list --columns id,name
 # Include creator and analytics data
 hex projects list --columns id,name,creator,last_viewed_at,app_views
 ```
+
+### Search Functionality
+
+The `projects list` command includes a powerful search feature:
+
+```bash
+# Search for projects by name or description (case-insensitive)
+hex projects list --search "dashboard"
+
+# Combine search with other filters
+hex projects list --search "analytics" --include-archived --owner-email data@example.com
+
+# Search with custom sorting
+hex projects list --search "report" --sort -last_edited_at
+
+# Search with custom columns
+hex projects list --search "metrics" --columns id,name,status,last_viewed_at
+```
+
+**Note:** The search feature fetches all available projects and filters them locally. This ensures comprehensive results but may take longer for workspaces with many projects. The progress indicator will show the number of matches found as it searches.
 
 ### Pagination
 

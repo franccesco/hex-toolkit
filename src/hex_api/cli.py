@@ -56,6 +56,11 @@ def list_projects(
         "Available: id, name, status, owner, created_at, creator, last_viewed_at, app_views. "
         "Default: id, name, status, owner, created_at",
     ),
+    search: Optional[str] = typer.Option(
+        None,
+        help="Search for projects by name or description (case-insensitive). "
+        "Fetches all projects and filters locally.",
+    ),
 ):
     """List all viewable projects."""
     try:
@@ -89,23 +94,86 @@ def list_projects(
                 )
                 raise typer.Exit(1)
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            transient=True,
-        ) as progress:
-            progress.add_task(description="Fetching projects...", total=None)
-            response = client.projects.list(
-                limit=limit,
-                include_archived=include_archived,
-                include_trashed=include_trashed,
-                creator_email=creator_email,
-                owner_email=owner_email,
-                sort_by=sort_by,
-                sort_direction=sort_direction,
-            )
+        # If searching, we need to fetch all projects
+        if search:
+            projects = []
+            after_cursor = None
+            search_lower = search.lower().strip()
 
-        projects = response.get("values", [])
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                transient=True,
+            ) as progress:
+                task = progress.add_task(
+                    description="Searching projects...", total=None
+                )
+
+                # Fetch all pages
+                while True:
+                    response = client.projects.list(
+                        limit=100,  # Max limit for faster fetching
+                        include_archived=include_archived,
+                        include_trashed=include_trashed,
+                        creator_email=creator_email,
+                        owner_email=owner_email,
+                        sort_by=sort_by,
+                        sort_direction=sort_direction,
+                        after=after_cursor,
+                    )
+
+                    page_projects = response.get("values", [])
+
+                    # Filter projects that match the search string
+                    for project in page_projects:
+                        # Get project name
+                        name = project.get(
+                            "title", project.get("name", project.get("displayName", ""))
+                        )
+                        if name:
+                            name = name.strip()
+
+                        # Get description
+                        description = project.get("description") or ""
+
+                        # Check if search string is in name or description (case-insensitive)
+                        if (search_lower in name.lower()) or (
+                            search_lower in description.lower()
+                        ):
+                            projects.append(project)
+
+                    # Update progress
+                    progress.update(
+                        task,
+                        description=f"Searching projects... (found {len(projects)} matches)",
+                    )
+
+                    # Check if there are more pages
+                    pagination = response.get("pagination", {})
+                    after_cursor = pagination.get("after")
+
+                    if not after_cursor or not page_projects:
+                        break
+
+        else:
+            # Normal listing without search
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                transient=True,
+            ) as progress:
+                progress.add_task(description="Fetching projects...", total=None)
+                response = client.projects.list(
+                    limit=limit,
+                    include_archived=include_archived,
+                    include_trashed=include_trashed,
+                    creator_email=creator_email,
+                    owner_email=owner_email,
+                    sort_by=sort_by,
+                    sort_direction=sort_direction,
+                )
+
+            projects = response.get("values", [])
 
         if not projects:
             console.print("[yellow]No projects found[/yellow]")
@@ -130,7 +198,10 @@ def list_projects(
         }
 
         # Create a table for display
-        table = Table(title="Hex Projects")
+        if search:
+            table = Table(title=f"Hex Projects (search: '{search}')")
+        else:
+            table = Table(title="Hex Projects")
 
         # Add selected columns to table
         for col_key in selected_columns:
@@ -210,11 +281,16 @@ def list_projects(
         console.print(table)
 
         # Show pagination info if available
-        pagination = response.get("pagination", {})
-        if pagination.get("hasMore"):
+        if search:
             console.print(
-                "\n[dim]More results available. Use --limit to see more.[/dim]"
+                f"\n[dim]Found {len(projects)} project(s) matching '{search}'[/dim]"
             )
+        else:
+            pagination = response.get("pagination", {})
+            if pagination.get("after"):
+                console.print(
+                    "\n[dim]More results available. Use --limit to see more.[/dim]"
+                )
 
     except HexAPIError as e:
         console.print(f"[red]API Error: {e}[/red]")
