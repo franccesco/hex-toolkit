@@ -49,8 +49,9 @@ class TestHexConfig:
         with pytest.raises(ValueError, match="API key cannot be empty"):
             HexConfig(api_key="")
 
-        with pytest.raises(ValueError, match="Base URL cannot be empty"):
-            HexConfig(api_key="test", base_url="")
+        # Empty string base_url should use default
+        config = HexConfig(api_key="test", base_url="")
+        assert config.base_url == "https://app.hex.tech/api"
 
 
 class TestHexClient:

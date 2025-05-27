@@ -1,25 +1,23 @@
 """Exceptions for the Hex API SDK."""
 
-from typing import Any, Dict, Optional
-
 
 class HexAPIError(Exception):
     """Base exception for all Hex API errors."""
 
     def __init__(
         self,
-        message: str,
-        status_code: Optional[int] = None,
-        response_data: Optional[Dict[str, Any]] = None,
-        trace_id: Optional[str] = None,
-    ) -> None:
+        message,
+        status_code=None,
+        response_data=None,
+        trace_id=None,
+    ):
         super().__init__(message)
         self.message = message
         self.status_code = status_code
         self.response_data = response_data or {}
         self.trace_id = trace_id
 
-    def __str__(self) -> str:
+    def __str__(self):
         parts = [self.message]
         if self.status_code:
             parts.append(f"(Status: {self.status_code})")
@@ -45,13 +43,13 @@ class HexValidationError(HexAPIError):
 
     def __init__(
         self,
-        message: str,
-        status_code: Optional[int] = None,
-        response_data: Optional[Dict[str, Any]] = None,
-        trace_id: Optional[str] = None,
-        invalid_params: Optional[list] = None,
-        not_found_params: Optional[list] = None,
-    ) -> None:
+        message,
+        status_code=None,
+        response_data=None,
+        trace_id=None,
+        invalid_params=None,
+        not_found_params=None,
+    ):
         super().__init__(message, status_code, response_data, trace_id)
         self.invalid_params = invalid_params or []
         self.not_found_params = not_found_params or []
@@ -62,12 +60,12 @@ class HexRateLimitError(HexAPIError):
 
     def __init__(
         self,
-        message: str,
-        status_code: Optional[int] = None,
-        response_data: Optional[Dict[str, Any]] = None,
-        trace_id: Optional[str] = None,
-        retry_after: Optional[int] = None,
-    ) -> None:
+        message,
+        status_code=None,
+        response_data=None,
+        trace_id=None,
+        retry_after=None,
+    ):
         super().__init__(message, status_code, response_data, trace_id)
         self.retry_after = retry_after
 

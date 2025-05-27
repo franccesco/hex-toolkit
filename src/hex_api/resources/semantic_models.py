@@ -1,12 +1,5 @@
 """Semantic models resource for the Hex API SDK."""
 
-from typing import Union
-from uuid import UUID
-
-from hex_api.models.semantic_models import (
-    SemanticModelIngestRequest,
-    SemanticModelsSyncResponse,
-)
 from hex_api.resources.base import BaseResource
 
 
@@ -15,11 +8,11 @@ class SemanticModelsResource(BaseResource):
 
     def ingest(
         self,
-        semantic_model_id: Union[str, UUID],
-        verbose: bool = True,
-        debug: bool = False,
-        dry_run: bool = False,
-    ) -> SemanticModelsSyncResponse:
+        semantic_model_id,
+        verbose=True,
+        debug=False,
+        dry_run=False,
+    ):
         """Ingest a semantic model from a zip file.
 
         Note: This endpoint requires sending a zip file as multipart/form-data.
@@ -32,18 +25,19 @@ class SemanticModelsResource(BaseResource):
             dry_run: If enabled, the sync will not write to the database
 
         Returns:
-            Sync response with warnings and debug information
+            Sync response dict with warnings and debug information
         """
-        request = SemanticModelIngestRequest(
-            verbose=verbose,
-            debug=debug,
-            dry_run=dry_run,
-        )
+        # Build request data
+        request_data = {
+            "verbose": verbose,
+            "debug": debug,
+        }
+        if dry_run:
+            request_data["dryRun"] = dry_run
 
         # TODO: Add support for file upload when needed
         # This would require passing a file parameter and using multipart/form-data
-        data = self._post(
+        return self._post(
             f"/v1/semantic-models/{semantic_model_id}/ingest",
-            json=request.model_dump(exclude_none=True, by_alias=True),
+            json=request_data,
         )
-        return self._parse_response(data, SemanticModelsSyncResponse)

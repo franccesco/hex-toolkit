@@ -1,6 +1,5 @@
 """Pytest configuration and fixtures."""
 
-from typing import Generator
 from unittest.mock import Mock, patch
 
 import httpx
@@ -8,11 +7,12 @@ import pytest
 
 from hex_api import HexClient
 from hex_api.config import HexConfig
+
 from .openapi_validator import validate_against_spec
 
 
 @pytest.fixture
-def test_config() -> HexConfig:
+def test_config():
     """Create a test configuration."""
     return HexConfig(
         api_key="test-api-key",
@@ -23,7 +23,7 @@ def test_config() -> HexConfig:
 
 
 @pytest.fixture
-def mock_httpx_client() -> Generator[Mock, None, None]:
+def mock_httpx_client():
     """Mock httpx.Client for testing."""
     with patch("httpx.Client") as mock:
         client_instance = Mock()
@@ -32,7 +32,7 @@ def mock_httpx_client() -> Generator[Mock, None, None]:
 
 
 @pytest.fixture
-def hex_client(test_config: HexConfig) -> Generator[HexClient, None, None]:
+def hex_client(test_config):
     """Create a HexClient instance for testing."""
     with patch("hex_api.client.httpx.Client") as mock_client_class:
         mock_client_instance = Mock()
@@ -43,7 +43,7 @@ def hex_client(test_config: HexConfig) -> Generator[HexClient, None, None]:
 
 
 @pytest.fixture
-def mock_response() -> Mock:
+def mock_response():
     """Create a mock HTTP response."""
     response = Mock(spec=httpx.Response)
     response.status_code = 200
@@ -54,7 +54,7 @@ def mock_response() -> Mock:
 
 
 @pytest.fixture
-def mock_error_response() -> Mock:
+def mock_error_response():
     """Create a mock error HTTP response."""
     response = Mock(spec=httpx.Response)
     response.status_code = 400
@@ -71,7 +71,7 @@ def mock_error_response() -> Mock:
 # Sample data fixtures
 @pytest.fixture
 @validate_against_spec("/v1/projects/{projectId}", "GET")
-def sample_project_data() -> dict:
+def sample_project_data():
     """Sample project data for testing."""
     return {
         "id": "12345678-1234-1234-1234-123456789012",
@@ -112,7 +112,7 @@ def sample_project_data() -> dict:
 
 @pytest.fixture
 @validate_against_spec("/v1/projects/{projectId}/runs", "POST")
-def sample_run_data() -> dict:
+def sample_run_data():
     """Sample run data for testing."""
     return {
         "projectId": "12345678-1234-1234-1234-123456789012",
@@ -127,7 +127,7 @@ def sample_run_data() -> dict:
 
 @pytest.fixture
 @validate_against_spec("/v1/embedding/createPresignedUrl/{projectId}", "POST")
-def sample_embedding_data() -> dict:
+def sample_embedding_data():
     """Sample embedding data for testing."""
     return {
         "url": "https://test.hex.tech/embed/signed-url",

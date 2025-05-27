@@ -21,17 +21,14 @@ uv run ruff check src tests
 # Fix linting issues automatically (when possible)
 uv run ruff check --fix src tests
 
-# Type check with mypy
-uv run mypy src
-
-# Run all checks (format, lint, type check)
-uv run ruff format src tests && uv run ruff check src tests && uv run mypy src
+# Run all checks (format, lint)
+uv run ruff format src tests && uv run ruff check src tests
 ```
 
 ## Architecture
 
 ### Client-Resource Pattern
-The SDK uses a client-resource pattern where the main `HexClient` class acts as the entry point and owns resource instances:
+The SDK uses a simple client-resource pattern where the main `HexClient` class acts as the entry point and owns resource instances:
 
 - `HexClient` (in `client.py`) - Main client that handles HTTP requests and authentication
 - Resource classes (in `resources/`) - Domain-specific functionality attached to the client
@@ -40,13 +37,14 @@ The SDK uses a client-resource pattern where the main `HexClient` class acts as 
   - `EmbeddingResource` - Embedding URL generation
   - `SemanticModelsResource` - Semantic model operations
 
-All resources inherit from `BaseResource` which provides common HTTP methods and response parsing.
+All resources inherit from `BaseResource` which provides common HTTP methods. Resources return plain Python dicts and lists.
 
-### Model Organization
-Models are organized by domain in the `models/` directory:
-- All models inherit from `HexBaseModel` which configures Pydantic v2 settings
-- Models use field aliases to map between Python snake_case and API camelCase
-- Enums are used extensively for type safety (e.g., `RunStatus`, `ProjectType`)
+### Response Format
+All API responses are returned as plain Python dictionaries. This makes the SDK simple and flexible:
+- No model classes to learn
+- Direct access to response data
+- Easy to work with using standard Python dict operations
+- Field names match the API's camelCase format (e.g., `projectId`, `runUrl`)
 
 ### Error Handling
 Custom exception hierarchy in `exceptions.py`:
@@ -55,18 +53,18 @@ Custom exception hierarchy in `exceptions.py`:
 - Validation errors include details about invalid/missing parameters
 
 ### Configuration
-`HexConfig` uses Pydantic for validation and supports:
+`HexConfig` is a simple class that supports:
 - Environment variables (`HEX_API_KEY`, `HEX_API_BASE_URL`)
-- Direct instantiation with overrides
-- Automatic URL cleaning and validation
+- Direct instantiation with parameters
+- Basic validation (API key required)
 
 ## Key Design Decisions
 
 1. **Synchronous Only**: The SDK is synchronous-only for simplicity. Async was removed as it's overkill for most Hex API use cases.
 
-2. **Pydantic v2**: Uses modern Pydantic v2 with `ConfigDict` and `field_validator` instead of deprecated v1 patterns.
+2. **No Type System**: No Pydantic, no type hints, no model classes. Just simple Python with dicts and lists.
 
-3. **Type Safety**: Extensive use of type hints, enums, and Pydantic models for compile-time safety.
+3. **Direct API Mapping**: Response fields use the same names as the API (camelCase) for transparency.
 
 4. **Resource Methods**: Resources use method names that match the API actions (e.g., `projects.run()` not `projects.create_run()`).
 
@@ -133,7 +131,7 @@ When the Hex API changes, follow this workflow:
 
 3. **Fix validation errors**:
    - Update mock data in `conftest.py` for new/changed fields
-   - Update Pydantic models if needed
+   - Update resource methods if needed
    - The error messages tell you exactly what needs fixing
 
 4. **Verify with integration test**:
@@ -144,7 +142,7 @@ When the Hex API changes, follow this workflow:
 
 5. **Run code quality checks**:
    ```bash
-   uv run ruff format src tests && uv run ruff check src tests && uv run mypy src
+   uv run ruff format src tests && uv run ruff check src tests
    ```
 
 The OpenAPI validation ensures your SDK stays in sync with the API with minimal effort.

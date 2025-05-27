@@ -1,22 +1,12 @@
 """Projects resource for the Hex API SDK."""
 
-from typing import Any, Dict, List, Optional, Union
-from uuid import UUID
-
-from hex_api.models.projects import (
-    Project,
-    ProjectList,
-    SortBy,
-    SortDirection,
-)
-from hex_api.models.runs import ProjectRunResponse, RunProjectRequest
 from hex_api.resources.base import BaseResource
 
 
 class ProjectsResource(BaseResource):
     """Resource for project-related API endpoints."""
 
-    def get(self, project_id: Union[str, UUID], include_sharing: bool = False) -> Project:
+    def get(self, project_id, include_sharing=False):
         """Get metadata about a single project.
 
         Args:
@@ -24,29 +14,28 @@ class ProjectsResource(BaseResource):
             include_sharing: Whether to include sharing information
 
         Returns:
-            Project details
+            Project details as a dict
         """
         params = {"includeSharing": include_sharing}
-        data = self._get(f"/v1/projects/{project_id}", params=params)
-        return self._parse_response(data, Project)
+        return self._get(f"/v1/projects/{project_id}", params=params)
 
     def list(
         self,
-        include_archived: bool = False,
-        include_components: bool = False,
-        include_trashed: bool = False,
-        include_sharing: bool = False,
-        statuses: Optional[List[str]] = None,
-        categories: Optional[List[str]] = None,
-        creator_email: Optional[str] = None,
-        owner_email: Optional[str] = None,
-        collection_id: Optional[str] = None,
-        limit: int = 25,
-        after: Optional[str] = None,
-        before: Optional[str] = None,
-        sort_by: Optional[SortBy] = None,
-        sort_direction: Optional[SortDirection] = None,
-    ) -> ProjectList:
+        include_archived=False,
+        include_components=False,
+        include_trashed=False,
+        include_sharing=False,
+        statuses=None,
+        categories=None,
+        creator_email=None,
+        owner_email=None,
+        collection_id=None,
+        limit=25,
+        after=None,
+        before=None,
+        sort_by=None,
+        sort_direction=None,
+    ):
         """List all viewable projects.
 
         Args:
@@ -62,11 +51,11 @@ class ProjectsResource(BaseResource):
             limit: Number of results per page (1-100)
             after: Cursor for next page
             before: Cursor for previous page
-            sort_by: Sort field
-            sort_direction: Sort direction
+            sort_by: Sort field (e.g., "CREATED_AT", "LAST_EDITED_AT")
+            sort_direction: Sort direction ("ASC" or "DESC")
 
         Returns:
-            List of projects with pagination info
+            Dict with 'values' (list of projects) and 'pagination' info
         """
         params = {
             "includeArchived": include_archived,
@@ -91,23 +80,22 @@ class ProjectsResource(BaseResource):
         if before:
             params["before"] = before
         if sort_by:
-            params["sortBy"] = sort_by.value
+            params["sortBy"] = sort_by
         if sort_direction:
-            params["sortDirection"] = sort_direction.value
+            params["sortDirection"] = sort_direction
 
-        data = self._get("/v1/projects", params=params)
-        return self._parse_response(data, ProjectList)
+        return self._get("/v1/projects", params=params)
 
     def run(
         self,
-        project_id: Union[str, UUID],
-        input_params: Optional[Dict[str, Any]] = None,
-        dry_run: bool = False,
-        notifications: Optional[List[Dict[str, Any]]] = None,
-        update_published_results: bool = False,
-        use_cached_sql_results: bool = True,
-        view_id: Optional[str] = None,
-    ) -> ProjectRunResponse:
+        project_id,
+        input_params=None,
+        dry_run=False,
+        notifications=None,
+        update_published_results=False,
+        use_cached_sql_results=True,
+        view_id=None,
+    ):
         """Trigger a run of the latest published version of a project.
 
         Args:
@@ -120,19 +108,21 @@ class ProjectsResource(BaseResource):
             view_id: Saved view ID to use
 
         Returns:
-            Run information including run ID and URLs
+            Run information dict with run ID and URLs
         """
-        request = RunProjectRequest(
-            input_params=input_params,
-            dry_run=dry_run,
-            notifications=notifications,
-            update_published_results=update_published_results,
-            use_cached_sql_results=use_cached_sql_results,
-            view_id=view_id,
-        )
+        # Build request data
+        request_data = {}
+        if input_params is not None:
+            request_data["inputParams"] = input_params
+        if dry_run:
+            request_data["dryRun"] = dry_run
+        if notifications is not None:
+            request_data["notifications"] = notifications
+        if update_published_results:
+            request_data["updatePublishedResults"] = update_published_results
+        if not use_cached_sql_results:
+            request_data["useCachedSqlResults"] = use_cached_sql_results
+        if view_id is not None:
+            request_data["viewId"] = view_id
 
-        data = self._post(
-            f"/v1/projects/{project_id}/runs",
-            json=request.model_dump(exclude_none=True, by_alias=True),
-        )
-        return self._parse_response(data, ProjectRunResponse)
+        return self._post(f"/v1/projects/{project_id}/runs", json=request_data)

@@ -1,6 +1,6 @@
 # Hex Python SDK
 
-A Python SDK for interacting with the [Hex API](https://hex.tech).
+A simple, Pythonic SDK for interacting with the [Hex API](https://hex.tech).
 
 ## Installation
 
@@ -18,30 +18,32 @@ client = HexClient(api_key="your-api-key")
 
 # List all projects
 projects = client.projects.list()
-for project in projects.values:
-    print(f"{project.title} - {project.id}")
+for project in projects["values"]:
+    print(f"{project['title']} - {project['id']}")
 
 # Get a specific project
 project = client.projects.get("project-id")
+print(project["title"])
 
 # Run a project
 run = client.projects.run(
     project_id="project-id",
     input_params={"param1": "value1"}
 )
-print(f"Run started: {run.run_id}")
+print(f"Run started: {run['runId']}")
 
 # Check run status
-status = client.runs.get_status(project_id="project-id", run_id=run.run_id)
-print(f"Status: {status.status}")
+status = client.runs.get_status(project_id="project-id", run_id=run["runId"])
+print(f"Status: {status['status']}")
 ```
 
 ## Features
 
-- **Type-safe**: Full type hints and Pydantic models
+- **Simple**: No complex type systems or model classes - just dicts and lists
+- **Pythonic**: Works with native Python data structures
 - **Comprehensive**: Covers all Hex API endpoints
 - **Developer-friendly**: Clear error messages and intuitive API
-- **Configurable**: Easy configuration via environment variables
+- **Flexible**: Direct access to API responses without abstraction layers
 
 ## Configuration
 
@@ -52,22 +54,75 @@ export HEX_API_KEY="your-api-key"
 export HEX_API_BASE_URL="https://app.hex.tech/api"  # Optional
 ```
 
+Or directly in code:
+
+```python
+client = HexClient(
+    api_key="your-api-key",
+    base_url="https://custom.hex.tech/api",
+    timeout=60.0
+)
+```
+
 ## Usage Examples
 
-### List Projects with Pagination
+### Working with Projects
+
+```python
+# List projects with filters
+projects = client.projects.list(
+    limit=50,
+    include_archived=False,
+    creator_email="user@example.com"
+)
+
+# Access project data - all fields use camelCase like the API
+for project in projects["values"]:
+    print(f"ID: {project['id']}")
+    print(f"Title: {project['title']}")
+    print(f"Type: {project['type']}")  # "PROJECT" or "COMPONENT"
+    print(f"Created: {project['createdAt']}")
+    print(f"Last edited: {project['lastEditedAt']}")
+```
+
+### Pagination
 
 ```python
 # List projects with pagination
-projects = client.projects.list(limit=10)
-while projects.pagination.after:
-    print(f"Processing {len(projects.values)} projects...")
-    projects = client.projects.list(after=projects.pagination.after)
+after_cursor = None
+all_projects = []
+
+while True:
+    response = client.projects.list(limit=100, after=after_cursor)
+    all_projects.extend(response["values"])
+    
+    # Check if there are more pages
+    pagination = response.get("pagination", {})
+    after_cursor = pagination.get("after")
+    if not after_cursor:
+        break
+
+print(f"Found {len(all_projects)} projects total")
 ```
 
-### Run Project with Notifications
+### Running Projects
 
 ```python
-# Run with Slack notifications
+# Simple run
+run = client.projects.run("project-id")
+
+# Run with parameters
+run = client.projects.run(
+    project_id="project-id",
+    input_params={
+        "date_start": "2024-01-01",
+        "date_end": "2024-01-31",
+        "metric": "revenue"
+    },
+    update_published_results=True
+)
+
+# Run with notifications
 run = client.projects.run(
     project_id="project-id",
     notifications=[{
@@ -78,44 +133,81 @@ run = client.projects.run(
 )
 ```
 
-### Monitor Run Status
+### Monitoring Runs
 
 ```python
 import time
 
 # Wait for completion
+run_id = run["runId"]
+project_id = run["projectId"]
+
 while True:
-    status = client.runs.get_status(project_id, run.run_id)
-    if status.status in ["COMPLETED", "ERRORED", "KILLED"]:
+    status = client.runs.get_status(project_id, run_id)
+    print(f"Status: {status['status']}")
+    
+    if status["status"] in ["COMPLETED", "ERRORED", "KILLED"]:
+        print(f"Run finished with status: {status['status']}")
+        if status.get("elapsedTime"):
+            print(f"Elapsed time: {status['elapsedTime']}ms")
         break
-    print(f"Status: {status.status}")
+    
     time.sleep(5)
 ```
 
 ### Error Handling
 
 ```python
-from hex_api.exceptions import HexAPIError, HexAuthenticationError
+from hex_api.exceptions import (
+    HexAPIError, 
+    HexAuthenticationError,
+    HexNotFoundError,
+    HexRateLimitError
+)
 
 try:
     project = client.projects.get("invalid-id")
+except HexNotFoundError as e:
+    print(f"Project not found: {e.message}")
 except HexAuthenticationError:
     print("Invalid API key")
+except HexRateLimitError as e:
+    print(f"Rate limited. Retry after: {e.retry_after} seconds")
 except HexAPIError as e:
     print(f"API error: {e.message}")
+    print(f"Status code: {e.status_code}")
     print(f"Trace ID: {e.trace_id}")
+```
+
+### Creating Embedded URLs
+
+```python
+# Create a basic embedded URL
+embed = client.embedding.create_presigned_url("project-id")
+print(f"Embed URL: {embed['url']}")
+
+# Create with options
+embed = client.embedding.create_presigned_url(
+    project_id="project-id",
+    expires_in=300000,  # 5 minutes
+    input_parameters={"filter": "Q1"},
+    display_options={
+        "theme": "dark",
+        "noEmbedFooter": True
+    }
+)
 ```
 
 ## API Resources
 
 ### Projects
-- `client.projects.list()` - List all projects
+- `client.projects.list(**filters)` - List all projects
 - `client.projects.get(project_id)` - Get a specific project
 - `client.projects.run(project_id, **options)` - Run a project
 
 ### Runs
 - `client.runs.get_status(project_id, run_id)` - Get run status
-- `client.runs.list(project_id)` - List runs for a project
+- `client.runs.list(project_id, **filters)` - List runs for a project
 - `client.runs.cancel(project_id, run_id)` - Cancel a run
 
 ### Embedding
@@ -124,23 +216,60 @@ except HexAPIError as e:
 ### Semantic Models
 - `client.semantic_models.ingest(semantic_model_id, **options)` - Ingest semantic model
 
+## Response Format
+
+All methods return plain Python dictionaries matching the Hex API response format:
+
+```python
+# Project dict structure
+project = {
+    "id": "12345678-1234-1234-1234-123456789012",
+    "title": "Sales Dashboard",
+    "type": "PROJECT",
+    "createdAt": "2024-01-01T00:00:00Z",
+    "lastEditedAt": "2024-01-15T12:30:00Z",
+    "creator": {"email": "user@example.com"},
+    "owner": {"email": "user@example.com"},
+    # ... other fields
+}
+
+# Run response structure
+run = {
+    "projectId": "12345678-1234-1234-1234-123456789012",
+    "runId": "87654321-4321-4321-4321-210987654321",
+    "runUrl": "https://app.hex.tech/app/runs/...",
+    "runStatusUrl": "https://app.hex.tech/api/v1/projects/.../runs/...",
+    # ... other fields
+}
+```
+
 ## Development
 
 ### Setup
 
 ```bash
-# Install with development dependencies
-pip install -e ".[dev]"
+# Install with development dependencies using uv
+uv pip install -e ".[dev]"
 
 # Run tests
-pytest
+uv run pytest
 
 # Run linting
-black src tests
-ruff check src tests
+uv run ruff format src tests
+uv run ruff check src tests
+```
 
-# Type checking
-mypy src
+### Running Tests
+
+```bash
+# Run all tests
+uv run pytest
+
+# Run with coverage
+uv run pytest --cov=src/hex_api
+
+# Run specific test file
+uv run pytest tests/test_client.py
 ```
 
 ### Contributing

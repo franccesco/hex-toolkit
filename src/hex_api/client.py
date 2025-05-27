@@ -1,7 +1,5 @@
 """Main client for the Hex API SDK."""
 
-from typing import Optional, TypeVar
-
 import httpx
 
 from hex_api.auth import HexAuth
@@ -19,19 +17,17 @@ from hex_api.resources.projects import ProjectsResource
 from hex_api.resources.runs import RunsResource
 from hex_api.resources.semantic_models import SemanticModelsResource
 
-T = TypeVar("T", bound="HexClient")
-
 
 class HexClient:
     """Client for the Hex API."""
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
-        config: Optional[HexConfig] = None,
+        api_key=None,
+        base_url=None,
+        config=None,
         **kwargs,
-    ) -> None:
+    ):
         """Initialize the Hex client.
 
         Args:
@@ -67,10 +63,10 @@ class HexClient:
 
     def request(
         self,
-        method: str,
-        path: str,
+        method,
+        path,
         **kwargs,
-    ) -> httpx.Response:
+    ):
         """Make a request to the API."""
         response = self._client.request(method, path, **kwargs)
 
@@ -79,7 +75,7 @@ class HexClient:
 
         return response
 
-    def _handle_response_error(self, response: httpx.Response) -> None:
+    def _handle_response_error(self, response):
         """Handle error responses from the API."""
         try:
             error_data = response.json()
@@ -146,12 +142,12 @@ class HexClient:
                 trace_id=trace_id,
             )
 
-    def close(self) -> None:
+    def close(self):
         """Close the HTTP client."""
         self._client.close()
 
-    def __enter__(self: T) -> T:
+    def __enter__(self):
         return self
 
-    def __exit__(self, *args) -> None:
+    def __exit__(self, *args):
         self.close()
