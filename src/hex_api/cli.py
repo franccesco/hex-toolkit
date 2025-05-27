@@ -183,7 +183,11 @@ def get_project(
             status = status.get("name", str(status))
         console.print(f"Status: [yellow]{status}[/yellow]")
 
-        console.print(f"Description: {project.get('description', 'N/A')}")
+        description = project.get("description", "N/A")
+        if description and description != "N/A":
+            # Remove all whitespace including newlines and replace with single spaces
+            description = " ".join(description.split())
+        console.print(f"Description: {description}")
 
         # Try different field names for owner
         owner = "N/A"
