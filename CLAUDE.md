@@ -150,3 +150,4 @@ The OpenAPI validation ensures your SDK stays in sync with the API with minimal 
 ## Best Practices
 
 - bump version according to semver before commiting changes
+- Run uv sync when bumping so the new version always appears in `uv.lock`
