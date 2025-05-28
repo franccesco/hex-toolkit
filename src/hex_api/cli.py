@@ -22,9 +22,11 @@ console = Console()
 # Create subcommands for better organization
 projects_app = typer.Typer(help="Manage Hex projects")
 runs_app = typer.Typer(help="Manage project runs")
+mcp_app = typer.Typer(help="MCP (Model Context Protocol) server management")
 
 app.add_typer(projects_app, name="projects")
 app.add_typer(runs_app, name="runs")
+app.add_typer(mcp_app, name="mcp")
 
 
 def get_client():
@@ -892,6 +894,93 @@ def _wait_for_run_completion(client, project_id: str, run_id: str, poll_interval
                 progress.stop()
                 console.print(f"\n[red]Error during polling: {e}[/red]")
                 break
+
+
+# MCP Commands
+@mcp_app.command("serve")
+def mcp_serve(
+    transport: str = typer.Option("stdio", help="Transport type: stdio, sse"),
+    port: int = typer.Option(8080, help="Port for SSE transport"),
+    host: str = typer.Option("127.0.0.1", help="Host for SSE transport"),
+):
+    """Run the Hex API MCP server."""
+    try:
+        # Check for API key
+        api_key = os.getenv("HEX_API_KEY")
+        if not api_key:
+            console.print("[red]Error: HEX_API_KEY environment variable not set[/red]")
+            raise typer.Exit(1)
+        
+        # Import here to avoid circular imports and only when needed
+        from hex_api.mcp import mcp_server
+        
+        if transport == "stdio":
+            console.print("[green]Starting Hex API MCP server (stdio transport)...[/green]")
+            mcp_server.run()
+        elif transport == "sse":
+            console.print(f"[green]Starting Hex API MCP server (SSE transport) on {host}:{port}...[/green]")
+            mcp_server.run(transport="sse", sse_host=host, sse_port=port)
+        else:
+            console.print(f"[red]Unknown transport: {transport}[/red]")
+            raise typer.Exit(1)
+            
+    except KeyboardInterrupt:
+        console.print("\n[yellow]MCP server stopped[/yellow]")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@mcp_app.command("install")
+def mcp_install(
+    target: str = typer.Option("auto", help="Installation target: auto, claude-desktop, claude-code, all"),
+    scope: str = typer.Option("user", help="Scope for Claude Code: local, project, user"),
+    force: bool = typer.Option(False, help="Force installation even if already configured"),
+):
+    """Install the Hex API MCP server for Claude Desktop and/or Claude Code."""
+    try:
+        # Import here to avoid circular imports
+        from hex_api.mcp.installer import MCPInstaller
+        
+        installer = MCPInstaller()
+        installer.install(target=target, scope=scope, force=force)
+        
+    except Exception as e:
+        console.print(f"[red]Installation failed: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@mcp_app.command("uninstall")
+def mcp_uninstall(
+    target: str = typer.Option("auto", help="Uninstall target: auto, claude-desktop, claude-code, all"),
+    scope: str = typer.Option("user", help="Scope for Claude Code: local, project, user"),
+):
+    """Remove the Hex API MCP server configuration."""
+    try:
+        # Import here to avoid circular imports
+        from hex_api.mcp.installer import MCPInstaller
+        
+        installer = MCPInstaller()
+        installer.uninstall(target=target, scope=scope)
+        
+    except Exception as e:
+        console.print(f"[red]Uninstallation failed: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@mcp_app.command("status")
+def mcp_status():
+    """Check the status of Hex API MCP server installation."""
+    try:
+        # Import here to avoid circular imports
+        from hex_api.mcp.installer import MCPInstaller
+        
+        installer = MCPInstaller()
+        installer.status()
+        
+    except Exception as e:
+        console.print(f"[red]Status check failed: {e}[/red]")
+        raise typer.Exit(1)
 
 
 @app.callback()

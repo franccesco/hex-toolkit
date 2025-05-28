@@ -2,10 +2,28 @@
 
 A simple, Pythonic SDK for interacting with the [Hex API](https://hex.tech).
 
+## Features
+
+- 🐍 **Simple, Pythonic interface** - Easy to use with clear method names
+- 🔧 **Complete API coverage** - Projects, runs, and more
+- 🤖 **MCP Support** - Use Hex directly in Claude Desktop and Claude Code
+- 📦 **Minimal dependencies** - Built on httpx for reliability
+- 🔐 **Secure** - API key authentication with environment variable support
+
 ## Installation
 
 ```bash
+# Basic installation
 pip install hex-api
+
+# With CLI support
+pip install "hex-api[cli]"
+
+# With MCP (Model Context Protocol) support
+pip install "hex-api[mcp]"
+
+# Install everything
+pip install "hex-api[all]"
 ```
 
 ## Quick Start
@@ -189,6 +207,24 @@ embed = client.embedding.create_presigned_url(
     }
 )
 ```
+
+## MCP (Model Context Protocol) Support
+
+The SDK includes built-in MCP support for using Hex directly within Claude Desktop and Claude Code. [Learn more about MCP](https://modelcontextprotocol.io).
+
+### Quick Setup
+
+```bash
+# Install the MCP server
+hex mcp install
+
+# Check installation status
+hex mcp status
+
+# Use in Claude - look for the 🔧 icon!
+```
+
+See the [MCP documentation](MCP_README.md) for detailed setup and usage instructions.
 
 ## API Resources
 

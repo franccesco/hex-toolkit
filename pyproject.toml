@@ -3,7 +3,7 @@ name = "hex-api"
 version = "0.1.0"
 description = "Python SDK for the Hex API"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 authors = [
     { name = "Franccesco Orozco", email = "franccesco@codingdose.info" }
 ]
@@ -13,8 +13,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -37,9 +35,18 @@ cli = [
     "typer>=0.9.0",
     "rich>=13.5.0",
 ]
+mcp = [
+    "fastmcp>=1.0.0",
+]
+all = [
+    "typer>=0.9.0",
+    "rich>=13.5.0",
+    "fastmcp>=1.0.0",
+]
 
 [project.scripts]
 hex = "hex_api.cli:app"
+hex-api = "hex_api.cli:app"
 
 [project.urls]
 Homepage = "https://github.com/yourusername/hex-api"
@@ -77,7 +84,7 @@ markers = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py38"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
