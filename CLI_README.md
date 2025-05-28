@@ -102,6 +102,7 @@ hex runs cancel PROJECT_ID RUN_ID --yes
 ### Rich Terminal Output
 
 The CLI uses Rich for beautiful terminal output including:
+
 - Colored output for better readability
 - Progress indicators for long operations
 - Formatted tables for list views
@@ -112,10 +113,6 @@ The CLI uses Rich for beautiful terminal output including:
 The CLI supports shell auto-completion. To enable it:
 
 ```bash
-# For Bash
-hex --install-completion
-
-# For Zsh
 hex --install-completion
 ```
 
@@ -124,8 +121,9 @@ hex --install-completion
 The `projects list` command supports customizable columns via the `--columns` option:
 
 **Available columns:**
+
 - `id` - Project ID
-- `name` - Project name  
+- `name` - Project name
 - `status` - Project status
 - `owner` - Owner email address
 - `created_at` - Creation date
@@ -207,6 +205,7 @@ hex runs status PROJECT_ID RUN_ID
 ```
 
 Output:
+
 ```
 Run Status
 Run ID: abc123
@@ -227,34 +226,42 @@ hex projects get PROJECT_ID --include-sharing
 This command shows:
 
 **📋 Basic Information**
+
 - Project ID, type, description
 - Status with color coding
 - Published version
 
 **👥 People**
+
 - Creator and owner email addresses
 
-**🕐 Timestamps**  
+**🕐 Timestamps**
+
 - Created, last edited, last published dates
 - Archived/trashed dates (if applicable)
 - Relative time display (e.g., "2h ago", "yesterday")
 
 **📊 Analytics**
+
 - Last viewed timestamp
 - App view counts (all time, 30d, 7d)
 - Published results update time
 
 **🏷️ Categories**
+
 - Project categories with descriptions
 
 **✅ Reviews**
+
 - Whether reviews are required
 
 **📅 Schedules**
+
 - Enabled schedules with cadence details
 - Schedule timing and timezone info
 
 **🔒 Sharing & Permissions** (with --include-sharing)
+
 - Workspace, public web, and support access levels
 - User permissions (first 5 shown)
 - Group and collection permissions

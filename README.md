@@ -37,14 +37,6 @@ status = client.runs.get_status(project_id="project-id", run_id=run["runId"])
 print(f"Status: {status['status']}")
 ```
 
-## Features
-
-- **Simple**: No complex type systems or model classes - just dicts and lists
-- **Pythonic**: Works with native Python data structures
-- **Comprehensive**: Covers all Hex API endpoints
-- **Developer-friendly**: Clear error messages and intuitive API
-- **Flexible**: Direct access to API responses without abstraction layers
-
 ## Configuration
 
 The client can be configured via environment variables:
@@ -95,7 +87,7 @@ all_projects = []
 while True:
     response = client.projects.list(limit=100, after=after_cursor)
     all_projects.extend(response["values"])
-    
+
     # Check if there are more pages
     pagination = response.get("pagination", {})
     after_cursor = pagination.get("after")
@@ -145,13 +137,13 @@ project_id = run["projectId"]
 while True:
     status = client.runs.get_status(project_id, run_id)
     print(f"Status: {status['status']}")
-    
+
     if status["status"] in ["COMPLETED", "ERRORED", "KILLED"]:
         print(f"Run finished with status: {status['status']}")
         if status.get("elapsedTime"):
             print(f"Elapsed time: {status['elapsedTime']}ms")
         break
-    
+
     time.sleep(5)
 ```
 
@@ -159,7 +151,7 @@ while True:
 
 ```python
 from hex_api.exceptions import (
-    HexAPIError, 
+    HexAPIError,
     HexAuthenticationError,
     HexNotFoundError,
     HexRateLimitError
@@ -201,19 +193,23 @@ embed = client.embedding.create_presigned_url(
 ## API Resources
 
 ### Projects
+
 - `client.projects.list(**filters)` - List all projects
 - `client.projects.get(project_id)` - Get a specific project
 - `client.projects.run(project_id, **options)` - Run a project
 
 ### Runs
+
 - `client.runs.get_status(project_id, run_id)` - Get run status
 - `client.runs.list(project_id, **filters)` - List runs for a project
 - `client.runs.cancel(project_id, run_id)` - Cancel a run
 
 ### Embedding
+
 - `client.embedding.create_presigned_url(project_id, **options)` - Create embedded URL
 
 ### Semantic Models
+
 - `client.semantic_models.ingest(semantic_model_id, **options)` - Ingest semantic model
 
 ## Response Format
@@ -279,7 +275,3 @@ uv run pytest tests/test_client.py
 3. Make your changes
 4. Add tests
 5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
