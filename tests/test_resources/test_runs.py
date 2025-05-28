@@ -2,7 +2,7 @@
 
 from unittest.mock import Mock
 
-from hex_api.client import HexClient
+from hex_toolkit.client import HexClient
 
 
 class TestRunsResource:

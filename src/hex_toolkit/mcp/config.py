@@ -48,12 +48,12 @@ def save_mcp_config(config: dict[str, Any], path: Path | None = None) -> None:
         f.write("\n")  # Add newline at end of file
 
 
-def get_hex_api_mcp_config() -> dict[str, Any]:
-    """Get the Hex API MCP server configuration for .mcp.json."""
+def get_hex_toolkit_mcp_config() -> dict[str, Any]:
+    """Get the Hex Toolkit MCP server configuration for .mcp.json."""
     return {
         "mcpServers": {
-            "hex-api": {
-                "command": "hex-api",
+            "hex-toolkit": {
+                "command": "hex",
                 "args": ["mcp", "serve"],
                 "env": {
                     "HEX_API_KEY": "${HEX_API_KEY}",
@@ -65,16 +65,16 @@ def get_hex_api_mcp_config() -> dict[str, Any]:
 
 
 def add_to_project_mcp_config() -> bool:
-    """Add Hex API to project's .mcp.json file."""
+    """Add Hex Toolkit to project's .mcp.json file."""
     config = load_mcp_config()
-    
+
     # Initialize mcpServers if not present
     if "mcpServers" not in config:
         config["mcpServers"] = {}
-    
-    # Add hex-api server configuration
-    config["mcpServers"]["hex-api"] = {
-        "command": "hex-api",
+
+    # Add hex-toolkit server configuration
+    config["mcpServers"]["hex-toolkit"] = {
+        "command": "hex",
         "args": ["mcp", "serve"],
         "env": {
             "HEX_API_KEY": "${HEX_API_KEY}",
@@ -91,12 +91,12 @@ def add_to_project_mcp_config() -> bool:
 
 
 def remove_from_project_mcp_config() -> bool:
-    """Remove Hex API from project's .mcp.json file."""
+    """Remove Hex Toolkit from project's .mcp.json file."""
     config = load_mcp_config()
 
-    if "mcpServers" in config and "hex-api" in config["mcpServers"]:
-        del config["mcpServers"]["hex-api"]
-        
+    if "mcpServers" in config and "hex-toolkit" in config["mcpServers"]:
+        del config["mcpServers"]["hex-toolkit"]
+
         # Remove empty mcpServers
         if not config["mcpServers"]:
             del config["mcpServers"]

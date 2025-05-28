@@ -24,10 +24,10 @@ The Model Context Protocol is an open standard that enables AI assistants like C
 
 ```bash
 # Install with MCP support
-pip install "hex-api[mcp]"
+pip install "hex-toolkit[mcp]"
 
 # Or install with all features
-pip install "hex-api[all]"
+pip install "hex-toolkit[all]"
 ```
 
 ### Set up your API key
@@ -160,8 +160,8 @@ This creates/updates `.mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "hex-api": {
-      "command": "hex-api",
+    "hex-toolkit": {
+      "command": "hex",
       "args": ["mcp", "serve"],
       "env": {
         "HEX_API_KEY": "${HEX_API_KEY}",
@@ -211,7 +211,7 @@ If you see "HEX_API_KEY environment variable not set":
 
 ### Claude Desktop Not Detecting MCP Server
 1. Ensure you've restarted Claude Desktop after installation
-2. Check the configuration file exists and contains the hex-api entry
+2. Check the configuration file exists and contains the hex-toolkit entry
 3. Run `hex mcp status` to verify installation
 4. Check Claude Desktop logs for errors
 
@@ -243,4 +243,4 @@ Found a bug or have a feature request? Please open an issue on our GitHub reposi
 
 ## License
 
-This MCP server is part of the hex-api SDK and is released under the MIT license.
+This MCP server is part of the hex-toolkit SDK and is released under the MIT license.

@@ -202,7 +202,7 @@ wheels = [
 ]
 
 [[package]]
-name = "hex-api"
+name = "hex-toolkit"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

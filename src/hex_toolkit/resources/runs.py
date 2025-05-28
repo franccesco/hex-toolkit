@@ -1,6 +1,6 @@
 """Runs resource for the Hex API SDK."""
 
-from hex_api.resources.base import BaseResource
+from hex_toolkit.resources.base import BaseResource
 
 
 class RunsResource(BaseResource):

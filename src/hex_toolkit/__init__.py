@@ -1,7 +1,7 @@
-"""Hex Python SDK - A Python client for the Hex API."""
+"""Hex Python Toolkit - A comprehensive toolkit for working with Hex."""
 
-from hex_api.client import HexClient
-from hex_api.exceptions import (
+from hex_toolkit.client import HexClient
+from hex_toolkit.exceptions import (
     HexAPIError,
     HexAuthenticationError,
     HexNotFoundError,

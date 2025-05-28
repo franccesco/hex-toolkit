@@ -1,7 +1,7 @@
 [project]
-name = "hex-api"
+name = "hex-toolkit"
 version = "0.1.0"
-description = "Python SDK for the Hex API"
+description = "A comprehensive toolkit for working with Hex: SDK, CLI, and MCP integration"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
@@ -45,14 +45,14 @@ all = [
 ]
 
 [project.scripts]
-hex = "hex_api.cli:app"
-hex-api = "hex_api.cli:app"
+hex = "hex_toolkit.cli:app"
+hex-toolkit = "hex_toolkit.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/hex-api"
-Documentation = "https://hex-api.readthedocs.io"
-Repository = "https://github.com/yourusername/hex-api"
-Issues = "https://github.com/yourusername/hex-api/issues"
+Homepage = "https://github.com/franccesco/hex-toolkit"
+Documentation = "https://hex-toolkit.readthedocs.io"
+Repository = "https://github.com/franccesco/hex-toolkit"
+Issues = "https://github.com/franccesco/hex-toolkit/issues"
 
 [build-system]
 requires = ["hatchling"]
@@ -67,7 +67,7 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/hex_api"]
+packages = ["src/hex_toolkit"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

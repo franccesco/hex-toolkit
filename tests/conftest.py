@@ -5,8 +5,8 @@ from unittest.mock import Mock, patch
 import httpx
 import pytest
 
-from hex_api import HexClient
-from hex_api.config import HexConfig
+from hex_toolkit import HexClient
+from hex_toolkit.config import HexConfig
 
 from .openapi_validator import validate_against_spec
 
@@ -34,7 +34,7 @@ def mock_httpx_client():
 @pytest.fixture
 def hex_client(test_config):
     """Create a HexClient instance for testing."""
-    with patch("hex_api.client.httpx.Client") as mock_client_class:
+    with patch("hex_toolkit.client.httpx.Client") as mock_client_class:
         mock_client_instance = Mock()
         mock_client_class.return_value = mock_client_instance
 

@@ -7,9 +7,9 @@ The Hex API SDK includes a command-line interface (CLI) for managing projects an
 Install the SDK with CLI dependencies:
 
 ```bash
-pip install hex-api[cli]
+pip install hex-toolkit[cli]
 # or with uv
-uv pip install hex-api[cli]
+uv pip install hex-toolkit[cli]
 ```
 
 ## Configuration

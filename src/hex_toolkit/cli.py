@@ -2,7 +2,6 @@
 
 import os
 import time
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -10,8 +9,8 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from hex_api import HexClient, __version__
-from hex_api.exceptions import HexAPIError
+from hex_toolkit import HexClient, __version__
+from hex_toolkit.exceptions import HexAPIError
 
 app = typer.Typer(
     help="Hex API CLI - Manage projects and runs via command line",
@@ -45,20 +44,20 @@ def list_projects(
     limit: int = typer.Option(25, help="Number of results per page (1-100)"),
     include_archived: bool = typer.Option(False, help="Include archived projects"),
     include_trashed: bool = typer.Option(False, help="Include trashed projects"),
-    creator_email: Optional[str] = typer.Option(None, help="Filter by creator email"),
-    owner_email: Optional[str] = typer.Option(None, help="Filter by owner email"),
-    sort: Optional[str] = typer.Option(
+    creator_email: str | None = typer.Option(None, help="Filter by creator email"),
+    owner_email: str | None = typer.Option(None, help="Filter by owner email"),
+    sort: str | None = typer.Option(
         None,
         help="Sort by field. Use 'created_at', 'last_edited_at', or 'last_published_at'. "
         "Prefix with '-' for descending order (e.g., '-created_at')",
     ),
-    columns: Optional[str] = typer.Option(
+    columns: str | None = typer.Option(
         None,
         help="Comma-separated list of columns to display. "
         "Available: id, name, status, owner, created_at, creator, last_viewed_at, app_views. "
         "Default: id, name, status, owner, created_at",
     ),
-    search: Optional[str] = typer.Option(
+    search: str | None = typer.Option(
         None,
         help="Search for projects by name or description (case-insensitive). "
         "Fetches all projects and filters locally.",
@@ -625,7 +624,7 @@ def run_project(
         False, help="Update cached state of published app"
     ),
     no_sql_cache: bool = typer.Option(False, help="Don't use cached SQL results"),
-    input_params: Optional[str] = typer.Option(
+    input_params: str | None = typer.Option(
         None, help="JSON string of input parameters"
     ),
     wait: bool = typer.Option(False, help="Wait for run to complete"),
@@ -727,7 +726,7 @@ def list_runs(
     project_id: str = typer.Argument(help="Unique ID for the project"),
     limit: int = typer.Option(10, help="Maximum number of runs to return"),
     offset: int = typer.Option(0, help="Number of runs to skip"),
-    status: Optional[str] = typer.Option(None, help="Filter by run status"),
+    status: str | None = typer.Option(None, help="Filter by run status"),
 ):
     """Get the status of API-triggered runs for a project."""
     try:
@@ -814,7 +813,7 @@ def cancel_run(
         raise typer.Exit(1) from e
 
 
-def _format_status(status: Optional[str]) -> str:
+def _format_status(status: str | None) -> str:
     """Format run status with color."""
     if not status:
         return "N/A"
@@ -903,84 +902,98 @@ def mcp_serve(
     port: int = typer.Option(8080, help="Port for SSE transport"),
     host: str = typer.Option("127.0.0.1", help="Host for SSE transport"),
 ):
-    """Run the Hex API MCP server."""
+    """Run the Hex Toolkit MCP server."""
     try:
         # Check for API key
         api_key = os.getenv("HEX_API_KEY")
         if not api_key:
             console.print("[red]Error: HEX_API_KEY environment variable not set[/red]")
             raise typer.Exit(1)
-        
+
         # Import here to avoid circular imports and only when needed
-        from hex_api.mcp import mcp_server
-        
+        from hex_toolkit.mcp import mcp_server
+
         if transport == "stdio":
-            console.print("[green]Starting Hex API MCP server (stdio transport)...[/green]")
+            console.print(
+                "[green]Starting Hex Toolkit MCP server (stdio transport)...[/green]"
+            )
             mcp_server.run()
         elif transport == "sse":
-            console.print(f"[green]Starting Hex API MCP server (SSE transport) on {host}:{port}...[/green]")
+            console.print(
+                f"[green]Starting Hex Toolkit MCP server (SSE transport) on {host}:{port}...[/green]"
+            )
             mcp_server.run(transport="sse", sse_host=host, sse_port=port)
         else:
             console.print(f"[red]Unknown transport: {transport}[/red]")
             raise typer.Exit(1)
-            
+
     except KeyboardInterrupt:
         console.print("\n[yellow]MCP server stopped[/yellow]")
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @mcp_app.command("install")
 def mcp_install(
-    target: str = typer.Option("auto", help="Installation target: auto, claude-desktop, claude-code, all"),
-    scope: str = typer.Option("user", help="Scope for Claude Code: local, project, user"),
-    force: bool = typer.Option(False, help="Force installation even if already configured"),
+    target: str = typer.Option(
+        "auto", help="Installation target: auto, claude-desktop, claude-code, all"
+    ),
+    scope: str = typer.Option(
+        "user", help="Scope for Claude Code: local, project, user"
+    ),
+    force: bool = typer.Option(
+        False, help="Force installation even if already configured"
+    ),
 ):
-    """Install the Hex API MCP server for Claude Desktop and/or Claude Code."""
+    """Install the Hex Toolkit MCP server for Claude Desktop and/or Claude Code."""
     try:
         # Import here to avoid circular imports
-        from hex_api.mcp.installer import MCPInstaller
-        
+        from hex_toolkit.mcp.installer import MCPInstaller
+
         installer = MCPInstaller()
         installer.install(target=target, scope=scope, force=force)
-        
+
     except Exception as e:
         console.print(f"[red]Installation failed: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @mcp_app.command("uninstall")
 def mcp_uninstall(
-    target: str = typer.Option("auto", help="Uninstall target: auto, claude-desktop, claude-code, all"),
-    scope: str = typer.Option("user", help="Scope for Claude Code: local, project, user"),
+    target: str = typer.Option(
+        "auto", help="Uninstall target: auto, claude-desktop, claude-code, all"
+    ),
+    scope: str = typer.Option(
+        "user", help="Scope for Claude Code: local, project, user"
+    ),
 ):
-    """Remove the Hex API MCP server configuration."""
+    """Remove the Hex Toolkit MCP server configuration."""
     try:
         # Import here to avoid circular imports
-        from hex_api.mcp.installer import MCPInstaller
-        
+        from hex_toolkit.mcp.installer import MCPInstaller
+
         installer = MCPInstaller()
         installer.uninstall(target=target, scope=scope)
-        
+
     except Exception as e:
         console.print(f"[red]Uninstallation failed: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @mcp_app.command("status")
 def mcp_status():
-    """Check the status of Hex API MCP server installation."""
+    """Check the status of Hex Toolkit MCP server installation."""
     try:
         # Import here to avoid circular imports
-        from hex_api.mcp.installer import MCPInstaller
-        
+        from hex_toolkit.mcp.installer import MCPInstaller
+
         installer = MCPInstaller()
         installer.status()
-        
+
     except Exception as e:
         console.print(f"[red]Status check failed: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.callback()
@@ -988,9 +1001,9 @@ def main(
     ctx: typer.Context,
     version: bool = typer.Option(False, "--version", "-v", help="Show version"),
 ):
-    """Hex API CLI - Manage projects and runs via command line."""
+    """Hex Toolkit CLI - Manage projects and runs via command line."""
     if version:
-        console.print(f"hex-api version {__version__}")
+        console.print(f"hex-toolkit version {__version__}")
         raise typer.Exit()
 
     # If no command was provided, show help

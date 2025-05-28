@@ -25,7 +25,7 @@ console = Console()
 
 
 class MCPInstaller:
-    """Handles installation of Hex API MCP server for Claude Desktop and Claude Code."""
+    """Handles installation of Hex Toolkit MCP server for Claude Desktop and Claude Code."""
 
     def __init__(self):
         self.system = platform.system()
@@ -65,16 +65,16 @@ class MCPInstaller:
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return False
 
-    def _get_hex_api_command(self) -> list[str]:
-        """Get the command to run hex-api MCP server."""
-        # Check if hex-api is installed in PATH
-        hex_api_in_path = shutil.which("hex-api") is not None
+    def _get_hex_toolkit_command(self) -> list[str]:
+        """Get the command to run hex MCP server."""
+        # Check if hex is installed in PATH
+        hex_toolkit_in_path = shutil.which("hex") is not None
 
-        if hex_api_in_path:
-            return ["hex-api", "mcp", "serve"]
+        if hex_toolkit_in_path:
+            return ["hex", "mcp", "serve"]
         else:
             # Fallback to Python module execution
-            return [sys.executable, "-m", "hex_api.cli", "mcp", "serve"]
+            return [sys.executable, "-m", "hex_toolkit.cli", "mcp", "serve"]
 
     def _read_claude_desktop_config(self) -> dict[str, Any]:
         """Read Claude Desktop configuration."""
@@ -125,9 +125,9 @@ class MCPInstaller:
         config = self._read_claude_desktop_config()
 
         # Check if already installed
-        if "mcpServers" in config and "hex-api" in config["mcpServers"] and not force:
+        if "mcpServers" in config and "hex-toolkit" in config["mcpServers"] and not force:
             console.print(
-                "[yellow]Hex API MCP server already configured in Claude Desktop[/yellow]"
+                "[yellow]Hex Toolkit MCP server already configured in Claude Desktop[/yellow]"
             )
             if not Confirm.ask("Do you want to update the configuration?"):
                 return False
@@ -142,9 +142,9 @@ class MCPInstaller:
         if "mcpServers" not in config:
             config["mcpServers"] = {}
 
-        # Add hex-api server configuration
-        command = self._get_hex_api_command()
-        config["mcpServers"]["hex-api"] = {
+        # Add hex-toolkit server configuration
+        command = self._get_hex_toolkit_command()
+        config["mcpServers"]["hex-toolkit"] = {
             "command": command[0],
             "args": command[1:],
             "env": {
@@ -172,12 +172,12 @@ class MCPInstaller:
             return self._install_project_config()
 
         # Build the claude mcp add command
-        command = self._get_hex_api_command()
+        command = self._get_hex_toolkit_command()
         claude_cmd = [
             "claude",
             "mcp",
             "add",
-            "hex-api",  # server name
+            "hex-toolkit",  # server name
             command[0],  # command
             *command[1:],  # args
             "-e",
@@ -221,14 +221,14 @@ class MCPInstaller:
 
         # Check if already exists
         existing_config = load_mcp_config(mcp_path)
-        if existing_config.get("mcpServers", {}).get("hex-api"):
-            console.print("[yellow]Hex API already configured in .mcp.json[/yellow]")
+        if existing_config.get("mcpServers", {}).get("hex-toolkit"):
+            console.print("[yellow]Hex Toolkit already configured in .mcp.json[/yellow]")
             if not Confirm.ask("Do you want to update the configuration?"):
                 return False
 
         # Add configuration
         if add_to_project_mcp_config():
-            console.print(f"[green]✓[/green] Added Hex API to {mcp_path}")
+            console.print(f"[green]✓[/green] Added Hex Toolkit to {mcp_path}")
             console.print(
                 "[dim]This configuration will be available to all team members[/dim]"
             )
@@ -255,8 +255,8 @@ class MCPInstaller:
         """Install the Hex API MCP server."""
         console.print(
             Panel(
-                "[bold]🚀 Hex API MCP Server Installation[/bold]\n\n"
-                "This will configure the Hex API MCP server for use with Claude",
+                "[bold]🚀 Hex Toolkit MCP Server Installation[/bold]\n\n"
+                "This will configure the Hex Toolkit MCP server for use with Claude",
                 expand=False,
             )
         )
@@ -292,7 +292,11 @@ class MCPInstaller:
             if t == "claude-desktop" and self.claude_desktop_config_path:
                 if self._install_claude_desktop(force):
                     success.append("Claude Desktop")
-            elif t == "claude-code" and self.is_claude_code_available and self._install_claude_code(scope, force):
+            elif (
+                t == "claude-code"
+                and self.is_claude_code_available
+                and self._install_claude_code(scope, force)
+            ):
                 success.append(f"Claude Code ({scope})")
 
         # Show summary
@@ -314,7 +318,7 @@ class MCPInstaller:
     def uninstall(self, target: str = "auto", scope: str = "user") -> None:
         """Uninstall the Hex API MCP server."""
         console.print(
-            Panel("[bold]🗑️  Hex API MCP Server Uninstallation[/bold]", expand=False)
+            Panel("[bold]🗑️  Hex Toolkit MCP Server Uninstallation[/bold]", expand=False)
         )
 
         # Detect targets
@@ -322,7 +326,7 @@ class MCPInstaller:
         if target == "auto":
             if self.claude_desktop_config_path:
                 config = self._read_claude_desktop_config()
-                if config.get("mcpServers", {}).get("hex-api"):
+                if config.get("mcpServers", {}).get("hex-toolkit"):
                     targets.append("claude-desktop")
             if self.is_claude_code_available:
                 targets.append("claude-code")
@@ -344,13 +348,13 @@ class MCPInstaller:
             return
 
         config = self._read_claude_desktop_config()
-        if "mcpServers" in config and "hex-api" in config["mcpServers"]:
+        if "mcpServers" in config and "hex-toolkit" in config["mcpServers"]:
             # Backup before removing
             backup_path = self._backup_config(self.claude_desktop_config_path)
             if backup_path:
                 console.print(f"[dim]Backed up config to: {backup_path}[/dim]")
 
-            del config["mcpServers"]["hex-api"]
+            del config["mcpServers"]["hex-toolkit"]
 
             # Remove empty mcpServers object
             if not config["mcpServers"]:
@@ -359,7 +363,7 @@ class MCPInstaller:
             self._write_claude_desktop_config(config)
             console.print("[green]✓[/green] Removed from Claude Desktop")
         else:
-            console.print("[yellow]Hex API not configured in Claude Desktop[/yellow]")
+            console.print("[yellow]Hex Toolkit not configured in Claude Desktop[/yellow]")
 
     def _uninstall_claude_code(self, scope: str = "user") -> None:
         """Remove MCP server from Claude Code."""
@@ -374,7 +378,7 @@ class MCPInstaller:
         if not self.is_claude_code_available:
             return
 
-        cmd = ["claude", "mcp", "remove", "hex-api"]
+        cmd = ["claude", "mcp", "remove", "hex-toolkit"]
         if scope == "local":
             cmd.extend(["--scope", "local"])
 
@@ -391,7 +395,7 @@ class MCPInstaller:
 
     def status(self) -> None:
         """Check installation status."""
-        console.print(Panel("[bold]📊 Hex API MCP Server Status[/bold]", expand=False))
+        console.print(Panel("[bold]📊 Hex Toolkit MCP Server Status[/bold]", expand=False))
 
         table = Table(show_header=True)
         table.add_column("Environment", style="cyan")
@@ -401,12 +405,12 @@ class MCPInstaller:
         # Check Claude Desktop
         if self.claude_desktop_config_path:
             config = self._read_claude_desktop_config()
-            if config.get("mcpServers", {}).get("hex-api"):
+            if config.get("mcpServers", {}).get("hex-toolkit"):
                 status = "[green]Installed[/green]"
                 details = f"Config: {self.claude_desktop_config_path}"
             else:
                 status = "[dim]Not installed[/dim]"
-                details = "Run: hex-api mcp install --target claude-desktop"
+                details = "Run: hex mcp install --target claude-desktop"
         else:
             status = "[red]Not found[/red]"
             details = "Claude Desktop not detected"
@@ -420,12 +424,12 @@ class MCPInstaller:
                 result = subprocess.run(
                     ["claude", "mcp", "list"], capture_output=True, text=True
                 )
-                if "hex-api" in result.stdout:
+                if "hex-toolkit" in result.stdout:
                     status = "[green]Installed[/green]"
                     details = "Run: claude mcp list"
                 else:
                     status = "[dim]Not installed[/dim]"
-                    details = "Run: hex-api mcp install --target claude-code"
+                    details = "Run: hex mcp install --target claude-code"
             except Exception:
                 status = "[yellow]Unknown[/yellow]"
                 details = "Could not check status"
@@ -441,15 +445,15 @@ class MCPInstaller:
             mcp_path = project_root / ".mcp.json"
             if mcp_path.exists():
                 config = load_mcp_config(mcp_path)
-                if config.get("mcpServers", {}).get("hex-api"):
+                if config.get("mcpServers", {}).get("hex-toolkit"):
                     status = "[green]Configured[/green]"
                     details = f"Config: {mcp_path}"
                 else:
                     status = "[dim]Not configured[/dim]"
-                    details = "Run: hex-api mcp install --scope project"
+                    details = "Run: hex mcp install --scope project"
             else:
                 status = "[dim]Not found[/dim]"
-                details = "Run: hex-api mcp install --scope project"
+                details = "Run: hex mcp install --scope project"
         else:
             status = "[yellow]No project[/yellow]"
             details = "Not in a project directory"

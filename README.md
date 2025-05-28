@@ -1,6 +1,6 @@
-# Hex Python SDK
+# Hex Toolkit
 
-A simple, Pythonic SDK for interacting with the [Hex API](https://hex.tech).
+A comprehensive toolkit for working with [Hex](https://hex.tech) - includes Python SDK, CLI, and MCP integration for Claude.
 
 ## Features
 
@@ -14,22 +14,22 @@ A simple, Pythonic SDK for interacting with the [Hex API](https://hex.tech).
 
 ```bash
 # Basic installation
-pip install hex-api
+pip install hex-toolkit
 
 # With CLI support
-pip install "hex-api[cli]"
+pip install "hex-toolkit[cli]"
 
 # With MCP (Model Context Protocol) support
-pip install "hex-api[mcp]"
+pip install "hex-toolkit[mcp]"
 
 # Install everything
-pip install "hex-api[all]"
+pip install "hex-toolkit[all]"
 ```
 
 ## Quick Start
 
 ```python
-from hex_api import HexClient
+from hex_toolkit import HexClient
 
 # Initialize the client
 client = HexClient(api_key="your-api-key")
@@ -168,7 +168,7 @@ while True:
 ### Error Handling
 
 ```python
-from hex_api.exceptions import (
+from hex_toolkit.exceptions import (
     HexAPIError,
     HexAuthenticationError,
     HexNotFoundError,
@@ -298,7 +298,7 @@ uv run ruff check src tests
 uv run pytest
 
 # Run with coverage
-uv run pytest --cov=src/hex_api
+uv run pytest --cov=src/hex_toolkit
 
 # Run specific test file
 uv run pytest tests/test_client.py

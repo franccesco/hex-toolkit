@@ -93,7 +93,7 @@ uv run pytest tests/test_client.py
 uv run pytest tests/test_client.py::TestHexClient::test_client_initialization
 
 # Run tests with coverage
-uv run pytest --cov=src/hex_api --cov-report=html
+uv run pytest --cov=src/hex_toolkit --cov-report=html
 
 # Run all tests including integration tests
 uv run pytest -m ""

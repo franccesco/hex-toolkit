@@ -2,9 +2,9 @@
 
 import httpx
 
-from hex_api.auth import HexAuth
-from hex_api.config import HexConfig
-from hex_api.exceptions import (
+from hex_toolkit.auth import HexAuth
+from hex_toolkit.config import HexConfig
+from hex_toolkit.exceptions import (
     HexAPIError,
     HexAuthenticationError,
     HexNotFoundError,
@@ -12,10 +12,10 @@ from hex_api.exceptions import (
     HexServerError,
     HexValidationError,
 )
-from hex_api.resources.embedding import EmbeddingResource
-from hex_api.resources.projects import ProjectsResource
-from hex_api.resources.runs import RunsResource
-from hex_api.resources.semantic_models import SemanticModelsResource
+from hex_toolkit.resources.embedding import EmbeddingResource
+from hex_toolkit.resources.projects import ProjectsResource
+from hex_toolkit.resources.runs import RunsResource
+from hex_toolkit.resources.semantic_models import SemanticModelsResource
 
 
 class HexClient:

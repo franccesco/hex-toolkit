@@ -10,8 +10,8 @@ import os
 
 import pytest
 
-from hex_api import HexClient
-from hex_api.exceptions import HexAPIError
+from hex_toolkit import HexClient
+from hex_toolkit.exceptions import HexAPIError
 
 
 @pytest.mark.integration

@@ -7,8 +7,8 @@ from typing import Any
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
-from hex_api import HexClient
-from hex_api.exceptions import HexAPIError
+from hex_toolkit import HexClient
+from hex_toolkit.exceptions import HexAPIError
 
 
 # Pydantic models for tool parameters
@@ -23,9 +23,7 @@ class ListProjectsParams(BaseModel):
     creator_email: str | None = Field(
         default=None, description="Filter by creator email"
     )
-    owner_email: str | None = Field(
-        default=None, description="Filter by owner email"
-    )
+    owner_email: str | None = Field(default=None, description="Filter by owner email")
     search: str | None = Field(
         default=None, description="Search for projects by name or description"
     )
@@ -71,7 +69,7 @@ class CancelRunParams(BaseModel):
 
 
 # Initialize FastMCP server
-mcp_server = FastMCP("hex-api")
+mcp_server = FastMCP("hex-toolkit")
 
 
 def get_hex_client() -> HexClient:

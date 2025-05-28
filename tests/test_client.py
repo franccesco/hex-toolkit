@@ -6,9 +6,9 @@ from unittest.mock import Mock, patch
 import httpx
 import pytest
 
-from hex_api import HexClient
-from hex_api.config import HexConfig
-from hex_api.exceptions import (
+from hex_toolkit import HexClient
+from hex_toolkit.config import HexConfig
+from hex_toolkit.exceptions import (
     HexAuthenticationError,
     HexNotFoundError,
     HexRateLimitError,
