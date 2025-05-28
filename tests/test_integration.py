@@ -36,17 +36,17 @@ class TestIntegration:
             result = client.projects.list(limit=1)
 
             # Basic assertions
-            assert hasattr(result, "values")
-            assert hasattr(result, "pagination")
-            assert isinstance(result.values, list)
-            assert len(result.values) <= 1
+            assert "values" in result
+            assert "pagination" in result
+            assert isinstance(result["values"], list)
+            assert len(result["values"]) <= 1
 
             # If we got a project, verify it has expected fields
-            if result.values:
-                project = result.values[0]
-                assert hasattr(project, "id")
-                assert hasattr(project, "title")
-                assert hasattr(project, "type")
+            if result["values"]:
+                project = result["values"][0]
+                assert "id" in project
+                assert "title" in project
+                assert "type" in project
 
         except HexAPIError as e:
             # If we get a 403, it might mean the API key is valid but doesn't have permissions
@@ -59,18 +59,18 @@ class TestIntegration:
         # First, try to get any project
         result = client.projects.list(limit=1)
 
-        if not result.values:
+        if not result["values"]:
             pytest.skip("No projects available to test with")
 
-        project_id = result.values[0].id
+        project_id = result["values"][0]["id"]
 
         # Now fetch that specific project
         project = client.projects.get(project_id)
 
-        assert project.id == project_id
-        assert hasattr(project, "title")
-        assert hasattr(project, "status")
-        assert hasattr(project, "type")
+        assert project["id"] == project_id
+        assert "title" in project
+        assert "status" in project
+        assert "type" in project
 
     def test_error_handling_invalid_project(self, client):
         """Test that proper errors are raised for invalid project IDs."""
@@ -93,10 +93,10 @@ if __name__ == "__main__":
     try:
         result = client.projects.list(limit=1)
         print("✓ Successfully connected to Hex API")
-        projects = result.values
+        projects = result["values"]
         print(f"✓ Found {len(projects)} project(s)")
         if projects:
-            print(f"✓ First project: {projects[0].title}")
+            print(f"✓ First project: {projects[0]['title']}")
     except Exception as e:
         print(f"✗ Failed to connect: {e}")
         exit(1)
