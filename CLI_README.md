@@ -71,6 +71,9 @@ hex projects run PROJECT_ID
 # Run with options
 hex projects run PROJECT_ID --dry-run --wait --poll-interval 10
 
+# Run with cache options
+hex projects run PROJECT_ID --update-cache --no-sql-cache
+
 # Run with input parameters
 hex projects run PROJECT_ID --input-params '{"param1": "value1", "param2": 123}'
 ```

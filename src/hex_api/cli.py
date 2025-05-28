@@ -34,8 +34,8 @@ def get_client():
         console.print("[red]Error: HEX_API_KEY environment variable not set[/red]")
         raise typer.Exit(1)
 
-    api_base_url = os.getenv("HEX_API_BASE_URL")
-    return HexClient(api_key=api_key, api_base_url=api_base_url)
+    base_url = os.getenv("HEX_API_BASE_URL")
+    return HexClient(api_key=api_key, base_url=base_url)
 
 
 @projects_app.command("list")
