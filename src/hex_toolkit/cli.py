@@ -907,16 +907,19 @@ def mcp_serve(
         # Check for API key
         api_key = os.getenv("HEX_API_KEY")
         if not api_key:
-            console.print("[red]Error: HEX_API_KEY environment variable not set[/red]")
+            # For stdio transport, don't print to stdout as it breaks MCP protocol
+            if transport != "stdio":
+                console.print(
+                    "[red]Error: HEX_API_KEY environment variable not set[/red]"
+                )
             raise typer.Exit(1)
 
         # Import here to avoid circular imports and only when needed
         from hex_toolkit.mcp import mcp_server
 
         if transport == "stdio":
-            console.print(
-                "[green]Starting Hex Toolkit MCP server (stdio transport)...[/green]"
-            )
+            # For stdio transport, don't print to stdout as it breaks MCP JSON protocol
+            # Claude Desktop uses stdio and expects clean JSON communication
             mcp_server.run()
         elif transport == "sse":
             console.print(
@@ -928,9 +931,13 @@ def mcp_serve(
             raise typer.Exit(1)
 
     except KeyboardInterrupt:
-        console.print("\n[yellow]MCP server stopped[/yellow]")
+        # For stdio transport, don't print to stdout as it breaks MCP protocol
+        if transport != "stdio":
+            console.print("\n[yellow]MCP server stopped[/yellow]")
     except Exception as e:
-        console.print(f"[red]Error: {e}[/red]")
+        # For stdio transport, don't print to stdout as it breaks MCP protocol
+        if transport != "stdio":
+            console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1) from e
 
 
