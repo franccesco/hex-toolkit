@@ -11,7 +11,7 @@ from typing import Any
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Confirm
+from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
 from .config import (
@@ -65,8 +65,19 @@ class MCPInstaller:
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return False
 
-    def _get_hex_toolkit_command(self) -> list[str]:
-        """Get the command to run hex MCP server."""
+    def _get_hex_toolkit_command_claude_desktop(self) -> list[str]:
+        """Get the command to run hex MCP server for Claude Desktop (needs absolute paths)."""
+        # Check if hex is installed in PATH
+        hex_path = shutil.which("hex")
+
+        if hex_path:
+            return [hex_path, "mcp", "serve"]
+        else:
+            # Fallback to Python module execution with absolute path
+            return [sys.executable, "-m", "hex_toolkit.cli", "mcp", "serve"]
+
+    def _get_hex_toolkit_command_claude_code(self) -> list[str]:
+        """Get the command to run hex MCP server for Claude Code (can use relative paths)."""
         # Check if hex is installed in PATH
         hex_toolkit_in_path = shutil.which("hex") is not None
 
@@ -125,12 +136,35 @@ class MCPInstaller:
         config = self._read_claude_desktop_config()
 
         # Check if already installed
-        if "mcpServers" in config and "hex-toolkit" in config["mcpServers"] and not force:
+        if (
+            "mcpServers" in config
+            and "hex-toolkit" in config["mcpServers"]
+            and not force
+        ):
             console.print(
                 "[yellow]Hex Toolkit MCP server already configured in Claude Desktop[/yellow]"
             )
             if not Confirm.ask("Do you want to update the configuration?"):
                 return False
+
+        # Prompt for API key since Claude Desktop can't access environment variables
+        api_key = os.getenv("HEX_API_KEY")
+        if not api_key:
+            console.print(
+                "\n[yellow]Claude Desktop cannot access environment variables.[/yellow]"
+            )
+            console.print(
+                "Please provide your Hex API key to configure the MCP server."
+            )
+            api_key = Prompt.ask("Enter your Hex API key", password=True)
+            if not api_key or not api_key.strip():
+                console.print(
+                    "[red]API key is required for Claude Desktop configuration[/red]"
+                )
+                return False
+
+        # Get base URL (optional)
+        base_url = os.getenv("HEX_API_BASE_URL", "https://api.hex.tech")
 
         # Backup existing config
         if self.claude_desktop_config_path.exists():
@@ -142,14 +176,14 @@ class MCPInstaller:
         if "mcpServers" not in config:
             config["mcpServers"] = {}
 
-        # Add hex-toolkit server configuration
-        command = self._get_hex_toolkit_command()
+        # Add hex-toolkit server configuration with actual API key
+        command = self._get_hex_toolkit_command_claude_desktop()
         config["mcpServers"]["hex-toolkit"] = {
             "command": command[0],
             "args": command[1:],
             "env": {
-                "HEX_API_KEY": "${HEX_API_KEY}",
-                "HEX_API_BASE_URL": "${HEX_API_BASE_URL}",
+                "HEX_API_KEY": api_key,
+                "HEX_API_BASE_URL": base_url,
             },
         }
 
@@ -172,7 +206,7 @@ class MCPInstaller:
             return self._install_project_config()
 
         # Build the claude mcp add command
-        command = self._get_hex_toolkit_command()
+        command = self._get_hex_toolkit_command_claude_code()
         claude_cmd = [
             "claude",
             "mcp",
@@ -222,7 +256,9 @@ class MCPInstaller:
         # Check if already exists
         existing_config = load_mcp_config(mcp_path)
         if existing_config.get("mcpServers", {}).get("hex-toolkit"):
-            console.print("[yellow]Hex Toolkit already configured in .mcp.json[/yellow]")
+            console.print(
+                "[yellow]Hex Toolkit already configured in .mcp.json[/yellow]"
+            )
             if not Confirm.ask("Do you want to update the configuration?"):
                 return False
 
@@ -363,7 +399,9 @@ class MCPInstaller:
             self._write_claude_desktop_config(config)
             console.print("[green]✓[/green] Removed from Claude Desktop")
         else:
-            console.print("[yellow]Hex Toolkit not configured in Claude Desktop[/yellow]")
+            console.print(
+                "[yellow]Hex Toolkit not configured in Claude Desktop[/yellow]"
+            )
 
     def _uninstall_claude_code(self, scope: str = "user") -> None:
         """Remove MCP server from Claude Code."""
@@ -395,7 +433,9 @@ class MCPInstaller:
 
     def status(self) -> None:
         """Check installation status."""
-        console.print(Panel("[bold]📊 Hex Toolkit MCP Server Status[/bold]", expand=False))
+        console.print(
+            Panel("[bold]📊 Hex Toolkit MCP Server Status[/bold]", expand=False)
+        )
 
         table = Table(show_header=True)
         table.add_column("Environment", style="cyan")

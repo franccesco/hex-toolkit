@@ -146,3 +146,7 @@ When the Hex API changes, follow this workflow:
    ```
 
 The OpenAPI validation ensures your SDK stays in sync with the API with minimal effort.
+
+## Best Practices
+
+- Use semver when making changes
