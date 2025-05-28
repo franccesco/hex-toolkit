@@ -149,4 +149,4 @@ The OpenAPI validation ensures your SDK stays in sync with the API with minimal 
 
 ## Best Practices
 
-- Use semver when making changes
+- bump version according to semver before commiting changes
