@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from hex_toolkit import HexClient
 from hex_toolkit.exceptions import HexAPIError
+from hex_toolkit.models.runs import RunStatus
 
 
 # Pydantic models for tool parameters
@@ -108,26 +109,26 @@ async def hex_list_projects(params: ListProjectsParams) -> dict[str, Any]:
                     after=after_cursor,
                 )
 
-                page_projects = response.get("values", [])
+                page_projects = response.values
 
                 # Filter projects matching search
                 for project in page_projects:
-                    name = project.get(
-                        "title", project.get("name", project.get("displayName", ""))
-                    )
+                    name = project.title
                     if name:
                         name = name.strip()
 
-                    description = project.get("description") or ""
+                    description = project.description or ""
 
                     if (search_lower in name.lower()) or (
                         search_lower in description.lower()
                     ):
-                        all_projects.append(project)
+                        all_projects.append(
+                            project.model_dump(exclude_none=True, by_alias=True)
+                        )
 
                 # Check for more pages
-                pagination = response.get("pagination", {})
-                after_cursor = pagination.get("after")
+                pagination = response.pagination
+                after_cursor = pagination.after
 
                 if not after_cursor or not page_projects:
                     break
@@ -148,15 +149,17 @@ async def hex_list_projects(params: ListProjectsParams) -> dict[str, Any]:
                 owner_email=params.owner_email,
             )
 
-            projects = response.get("values", [])
-            pagination = response.get("pagination", {})
+            projects = response.values
+            pagination = response.pagination
 
             return {
                 "success": True,
-                "projects": projects,
+                "projects": [
+                    p.model_dump(exclude_none=True, by_alias=True) for p in projects
+                ],
                 "count": len(projects),
-                "has_more": bool(pagination.get("after")),
-                "pagination": pagination,
+                "has_more": bool(pagination.after),
+                "pagination": pagination.model_dump(exclude_none=True, by_alias=True),
             }
 
     except HexAPIError as e:
@@ -179,7 +182,10 @@ async def hex_get_project(params: GetProjectParams) -> dict[str, Any]:
             params.project_id, include_sharing=params.include_sharing
         )
 
-        return {"success": True, "project": project}
+        return {
+            "success": True,
+            "project": project.model_dump(exclude_none=True, by_alias=True),
+        }
 
     except HexAPIError as e:
         return {"success": False, "error": str(e), "error_type": e.__class__.__name__}
@@ -205,16 +211,16 @@ async def hex_run_project(params: RunProjectParams) -> dict[str, Any]:
             use_cached_sql_results=not params.no_sql_cache,
         )
 
-        run_id = run_info.get("runId", run_info.get("id"))
-        run_url = run_info.get("runUrl", run_info.get("url"))
-        status_url = run_info.get("runStatusUrl", run_info.get("statusUrl"))
+        run_id = run_info.run_id
+        run_url = run_info.run_url
+        status_url = run_info.run_status_url
 
         return {
             "success": True,
             "run_id": run_id,
             "run_url": run_url,
             "status_url": status_url,
-            "run_info": run_info,
+            "run_info": run_info.model_dump(exclude_none=True, by_alias=True),
         }
 
     except HexAPIError as e:
@@ -237,13 +243,12 @@ async def hex_get_run_status(params: RunStatusParams) -> dict[str, Any]:
 
         return {
             "success": True,
-            "status": status.get("status"),
-            "run_id": status.get("runId", status.get("id")),
-            "project_id": status.get("projectId", params.project_id),
-            "started_at": status.get("startTime", status.get("startedAt")),
-            "ended_at": status.get("endTime", status.get("endedAt")),
-            "error": status.get("error"),
-            "full_status": status,
+            "status": status.status.value,
+            "run_id": status.run_id,
+            "project_id": status.project_id,
+            "started_at": status.start_time,
+            "ended_at": status.end_time,
+            "full_status": status.model_dump(exclude_none=True, by_alias=True),
         }
 
     except HexAPIError as e:
@@ -294,15 +299,15 @@ async def hex_list_runs(
             project_id,
             limit=limit,
             offset=offset,
-            status_filter=status_filter,
+            status_filter=RunStatus(status_filter) if status_filter else None,
         )
 
-        runs = response.get("runs", [])
-        total_count = response.get("totalCount", 0)
+        runs = response.runs
+        total_count = len(response.runs)  # ProjectRunsResponse doesn't have totalCount
 
         return {
             "success": True,
-            "runs": runs,
+            "runs": [run.model_dump(exclude_none=True, by_alias=True) for run in runs],
             "count": len(runs),
             "total_count": total_count,
             "has_more": total_count > (offset + len(runs)),

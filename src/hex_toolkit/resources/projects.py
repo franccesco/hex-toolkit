@@ -17,9 +17,7 @@ from hex_toolkit.resources.base import BaseResource
 class ProjectsResource(BaseResource):
     """Resource for project-related API endpoints."""
 
-    def get(
-        self, project_id: str | UUID, include_sharing: bool = False
-    ) -> Project:
+    def get(self, project_id: str | UUID, include_sharing: bool = False) -> Project:
         """Get metadata about a single project.
 
         Args:
@@ -94,13 +92,9 @@ class ProjectsResource(BaseResource):
         if before:
             params["before"] = before
         if sort_by:
-            params["sortBy"] = sort_by.value if isinstance(sort_by, SortBy) else sort_by
+            params["sortBy"] = sort_by.value
         if sort_direction:
-            params["sortDirection"] = (
-                sort_direction.value
-                if isinstance(sort_direction, SortDirection)
-                else sort_direction
-            )
+            params["sortDirection"] = sort_direction.value
 
         data = self._get("/v1/projects", params=params)
         return self._parse_response(data, ProjectList)
@@ -129,14 +123,20 @@ class ProjectsResource(BaseResource):
         Returns:
             ProjectRunResponse with run information
         """
-        request = RunProjectRequest(
-            input_params=input_params,
-            dry_run=dry_run,
-            notifications=notifications,
-            update_published_results=update_published_results,
-            use_cached_sql_results=use_cached_sql_results,
-            view_id=view_id,
-        )
+        request_data = {}
+        if input_params:
+            request_data["inputParams"] = input_params
+        if dry_run:
+            request_data["dryRun"] = dry_run
+        if notifications:
+            request_data["notifications"] = notifications
+        if update_published_results:
+            request_data["updatePublishedResults"] = update_published_results
+        request_data["useCachedSqlResults"] = use_cached_sql_results
+        if view_id:
+            request_data["viewId"] = view_id
+
+        request = RunProjectRequest.model_validate(request_data)
 
         data = self._post(
             f"/v1/projects/{project_id}/runs",

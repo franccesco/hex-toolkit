@@ -57,9 +57,7 @@ class ProjectRunNotification(HexBaseModel):
 
     type: RunNotificationType
     include_success_screenshot: bool = Field(..., alias="includeSuccessScreenshot")
-    screenshot_format: ScreenshotFormat | None = Field(
-        None, alias="screenshotFormat"
-    )
+    screenshot_format: ScreenshotFormat | None = Field(None, alias="screenshotFormat")
     slack_channel_ids: list[str] | None = Field(None, alias="slackChannelIds")
     user_ids: list[str] | None = Field(None, alias="userIds")
     group_ids: list[str] | None = Field(None, alias="groupIds")

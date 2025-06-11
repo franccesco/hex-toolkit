@@ -33,11 +33,12 @@ class SemanticModelsResource(BaseResource):
         Returns:
             SemanticModelsSyncResponse with warnings and debug information
         """
-        request = SemanticModelIngestRequest(
-            verbose=verbose,
-            debug=debug,
-            dry_run=dry_run,
-        )
+        request_data = {
+            "verbose": verbose,
+            "debug": debug,
+            "dryRun": dry_run,
+        }
+        request = SemanticModelIngestRequest.model_validate(request_data)
 
         # TODO: Add support for file upload when needed
         # This would require passing a file parameter and using multipart/form-data

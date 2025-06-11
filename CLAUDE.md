@@ -21,8 +21,11 @@ uv run ruff check src tests
 # Fix linting issues automatically (when possible)
 uv run ruff check --fix src tests
 
-# Run all checks (format, lint)
-uv run ruff format src tests && uv run ruff check src tests
+# Type check with Pyright
+uv run pyright
+
+# Run all checks (format, lint, type check)
+uv run ruff format src tests && uv run ruff check src tests && uv run pyright
 ```
 
 ## Architecture

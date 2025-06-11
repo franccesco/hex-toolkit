@@ -38,14 +38,20 @@ class EmbeddingResource(BaseResource):
         Returns:
             EmbeddingResponse with the presigned URL
         """
-        request = EmbeddingRequest(
-            hex_user_attributes=hex_user_attributes,
-            scope=scope,
-            input_parameters=input_parameters,
-            expires_in=expires_in,
-            display_options=display_options,
-            test_mode=test_mode,
-        )
+        request_data = {}
+        if hex_user_attributes:
+            request_data["hexUserAttributes"] = hex_user_attributes
+        if scope:
+            request_data["scope"] = scope
+        if input_parameters:
+            request_data["inputParameters"] = input_parameters
+        if expires_in is not None:
+            request_data["expiresIn"] = expires_in
+        if display_options:
+            request_data["displayOptions"] = display_options
+        request_data["testMode"] = test_mode
+
+        request = EmbeddingRequest.model_validate(request_data)
 
         data = self._post(
             f"/v1/embedding/createPresignedUrl/{project_id}",

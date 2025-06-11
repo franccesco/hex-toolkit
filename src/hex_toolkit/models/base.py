@@ -1,6 +1,5 @@
 """Base models for the Hex API SDK."""
 
-
 from pydantic import BaseModel, ConfigDict, Field
 
 

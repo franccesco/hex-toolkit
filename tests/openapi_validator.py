@@ -171,7 +171,7 @@ def validate_against_spec(endpoint, method="GET", response_code=None):
                 resolved_schema = resolve_all_refs(schema)
 
                 # Now validate with the fully resolved schema (no $refs)
-                jsonschema.validate(instance=data, schema=resolved_schema)
+                jsonschema.validate(instance=data, schema=resolved_schema)  # type: ignore[arg-type]
 
             except ValidationError as e:
                 raise AssertionError(

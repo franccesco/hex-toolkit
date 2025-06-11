@@ -55,18 +55,12 @@ class RunsResource(BaseResource):
         if offset is not None:
             params["offset"] = offset
         if status_filter is not None:
-            params["statusFilter"] = (
-                status_filter.value
-                if isinstance(status_filter, RunStatus)
-                else status_filter
-            )
+            params["statusFilter"] = status_filter.value
 
         data = self._get(f"/v1/projects/{project_id}/runs", params=params)
         return self._parse_response(data, ProjectRunsResponse)
 
-    def cancel(
-        self, project_id: str | UUID, run_id: str | UUID
-    ) -> dict[str, Any]:
+    def cancel(self, project_id: str | UUID, run_id: str | UUID) -> dict[str, Any]:
         """Kill a run that was invoked via the API.
 
         Args:

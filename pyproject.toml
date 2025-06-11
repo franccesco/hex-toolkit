@@ -30,7 +30,6 @@ dev = [
     "pytest-cov>=4.1.0",
     "pytest-mock>=3.11.0",
     "ruff>=0.1.0",
-    "mypy>=1.5.0",
     "pre-commit>=3.3.0",
     "jsonschema>=4.0.0",
 ]
@@ -117,20 +116,37 @@ skip-magic-trailing-comma = false
 # Line ending style
 line-ending = "auto"
 
-[tool.mypy]
-python_version = "3.10"
-strict = true
-warn_return_any = true
-warn_unused_configs = true
-no_implicit_reexport = true
-namespace_packages = true
-show_error_codes = true
-show_column_numbers = true
-pretty = true
+[tool.pyright]
+pythonVersion = "3.10"
+typeCheckingMode = "strict"
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportPrivateUsage = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportUntypedFunctionDecorator = false
+reportUntypedClassDecorator = false
+reportUntypedBaseClass = false
+exclude = ["**/node_modules", "**/__pycache__", ".git", ".venv", "dist", "build"]
 
-[[tool.mypy.overrides]]
-module = "tests.*"
-ignore_errors = true
+# Test-specific overrides
+extraPaths = ["tests"]
+
+[[tool.pyright.executionEnvironments]]
+root = "tests"
+reportFunctionMemberAccess = false
+reportAttributeAccessIssue = false
+reportIndexIssue = false
+reportUnknownParameterType = false
+reportMissingParameterType = false
+reportUnknownArgumentType = false
+reportMissingTypeArgument = false
+
+[[tool.pyright.executionEnvironments]]
+root = "src/hex_toolkit/mcp"
+reportCallIssue = false
+reportAttributeAccessIssue = false
 
 [tool.coverage.run]
 source = ["src"]
@@ -140,3 +156,8 @@ branch = true
 precision = 2
 show_missing = true
 skip_covered = false
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.402",
+]

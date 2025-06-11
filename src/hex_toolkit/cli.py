@@ -2,6 +2,7 @@
 
 import os
 import time
+from datetime import datetime
 
 import typer
 from rich.console import Console
@@ -11,6 +12,8 @@ from rich.table import Table
 
 from hex_toolkit import HexClient, __version__
 from hex_toolkit.exceptions import HexAPIError
+from hex_toolkit.models.projects import SortBy, SortDirection
+from hex_toolkit.models.runs import RunStatus
 
 app = typer.Typer(
     help="Hex API CLI - Manage projects and runs via command line",
@@ -79,11 +82,11 @@ def list_projects(
                 sort_direction = "ASC"
                 sort_field = sort
 
-            # Map CLI field names to API field names
+            # Map CLI field names to API enums
             sort_field_map = {
-                "created_at": "CREATED_AT",
-                "last_edited_at": "LAST_EDITED_AT",
-                "last_published_at": "LAST_PUBLISHED_AT",
+                "created_at": SortBy.CREATED_AT,
+                "last_edited_at": SortBy.LAST_EDITED_AT,
+                "last_published_at": SortBy.LAST_PUBLISHED_AT,
             }
 
             if sort_field in sort_field_map:
@@ -94,6 +97,11 @@ def list_projects(
                     f"Valid options are: created_at, last_edited_at, last_published_at[/red]"
                 )
                 raise typer.Exit(1)
+
+            # Convert string to enum
+            sort_direction = (
+                SortDirection.DESC if sort_direction == "DESC" else SortDirection.ASC
+            )
 
         # If searching, we need to fetch all projects
         if search:
@@ -123,19 +131,15 @@ def list_projects(
                         after=after_cursor,
                     )
 
-                    page_projects = response.get("values", [])
+                    page_projects = response.values
 
                     # Filter projects that match the search string
                     for project in page_projects:
                         # Get project name
-                        name = project.get(
-                            "title", project.get("name", project.get("displayName", ""))
-                        )
-                        if name:
-                            name = name.strip()
+                        name = project.title.strip() if project.title else ""
 
                         # Get description
-                        description = project.get("description") or ""
+                        description = project.description or ""
 
                         # Check if search string is in name or description (case-insensitive)
                         if (search_lower in name.lower()) or (
@@ -150,8 +154,8 @@ def list_projects(
                     )
 
                     # Check if there are more pages
-                    pagination = response.get("pagination", {})
-                    after_cursor = pagination.get("after")
+                    pagination = response.pagination
+                    after_cursor = pagination.after if pagination else None
 
                     if not after_cursor or not page_projects:
                         break
@@ -174,7 +178,7 @@ def list_projects(
                     sort_direction=sort_direction,
                 )
 
-            projects = response.get("values", [])
+            projects = response.values
 
         if not projects:
             console.print("[yellow]No projects found[/yellow]")
@@ -216,65 +220,49 @@ def list_projects(
 
             for col_key in selected_columns:
                 if col_key == "id":
-                    row_data.append(project.get("id", project.get("projectId", "")))
+                    row_data.append(str(project.id))
 
                 elif col_key == "name":
-                    # Try different field names for project name
-                    name = project.get(
-                        "title", project.get("name", project.get("displayName", ""))
-                    )
-                    if name:
-                        name = name.strip()
+                    # Get project title
+                    name = project.title.strip() if project.title else ""
                     row_data.append(name)
 
                 elif col_key == "status":
-                    # Handle status which might be a dict or string
-                    status = project.get("status", "")
-                    if isinstance(status, dict):
-                        status = status.get("name", str(status))
+                    # Handle status
+                    status = project.status.name if project.status else ""
                     row_data.append(status)
 
                 elif col_key == "owner":
-                    # Try different field names for owner
-                    owner = ""
-                    if project.get("owner"):
-                        owner = project["owner"].get("email", "")
-                    if not owner:
-                        owner = project.get("ownerEmail", "")
+                    # Get owner email
+                    owner = project.owner.email if project.owner else ""
                     row_data.append(owner)
 
                 elif col_key == "created_at":
                     row_data.append(
-                        project.get("createdAt", "")[:10]
-                        if project.get("createdAt")
+                        project.created_at.strftime("%Y-%m-%d")
+                        if project.created_at
                         else ""
                     )
 
                 elif col_key == "creator":
                     # Get creator email
-                    creator = ""
-                    if project.get("creator"):
-                        creator = project["creator"].get("email", "")
+                    creator = project.creator.email if project.creator else ""
                     row_data.append(creator)
 
                 elif col_key == "last_viewed_at":
                     # Get last viewed timestamp from analytics
                     last_viewed = ""
-                    if project.get("analytics") and project["analytics"].get(
-                        "lastViewedAt"
-                    ):
-                        last_viewed = project["analytics"]["lastViewedAt"][:10]
+                    if project.analytics and project.analytics.last_viewed_at:
+                        last_viewed = project.analytics.last_viewed_at.strftime(
+                            "%Y-%m-%d"
+                        )
                     row_data.append(last_viewed)
 
                 elif col_key == "app_views":
                     # Get app views all time from analytics
                     app_views = ""
-                    if project.get("analytics") and project["analytics"].get(
-                        "appViews"
-                    ):
-                        app_views = str(
-                            project["analytics"]["appViews"].get("allTime", "")
-                        )
+                    if project.analytics and project.analytics.app_views:
+                        app_views = str(project.analytics.app_views.all_time)
                     row_data.append(app_views)
 
             table.add_row(*row_data)
@@ -287,8 +275,8 @@ def list_projects(
                 f"\n[dim]Found {len(projects)} project(s) matching '{search}'[/dim]"
             )
         else:
-            pagination = response.get("pagination", {})
-            if pagination.get("after"):
+            pagination = response.pagination
+            if pagination and pagination.after:
                 console.print(
                     "\n[dim]More results available. Use --limit to see more.[/dim]"
                 )
@@ -312,11 +300,8 @@ def get_project(
         project = client.projects.get(project_id, include_sharing=include_sharing)
 
         # Extract basic information
-        name = project.get("title", project.get("name", "Untitled"))
-        if name:
-            name = name.strip()
-
-        project_type = project.get("type", "PROJECT")
+        name = project.title.strip() if project.title else "Untitled"
+        project_type = project.type.value if project.type else "PROJECT"
 
         # Create main panel with project name
         console.print()
@@ -328,32 +313,26 @@ def get_project(
         info_table.add_column(style="dim")
         info_table.add_column()
 
-        info_table.add_row("ID", f"[cyan]{project.get('id', project_id)}[/cyan]")
+        info_table.add_row("ID", f"[cyan]{project.id}[/cyan]")
         info_table.add_row("Type", project_type)
 
         # Description
-        description = project.get("description")
-        if description:
+        if project.description:
             # Clean up description
-            description = " ".join(description.split())
+            description = " ".join(project.description.split())
             if len(description) > 100:
                 description = description[:97] + "..."
             info_table.add_row("Description", description)
 
         # Status
-        status = project.get("status")
-        if isinstance(status, dict):
-            status_name = status.get("name", "Unknown")
-        else:
-            status_name = str(status) if status else "Unknown"
+        status_name = project.status.name if project.status else "Unknown"
 
         status_color = "green" if status_name == "Published" else "yellow"
         info_table.add_row("Status", f"[{status_color}]{status_name}[/{status_color}]")
 
         # Published version
-        published_version = project.get("publishedVersion")
-        if published_version:
-            info_table.add_row("Published Version", str(published_version))
+        # Note: publishedVersion field not in current model
+        # Skip this field as it's not available
 
         console.print(info_table)
 
@@ -364,17 +343,12 @@ def get_project(
         people_table.add_column()
 
         # Creator
-        if project.get("creator"):
-            creator_email = project["creator"].get("email", "Unknown")
-            people_table.add_row("Creator", creator_email)
+        if project.creator:
+            people_table.add_row("Creator", project.creator.email)
 
         # Owner
-        owner_email = "Unknown"
-        if project.get("owner"):
-            owner_email = project["owner"].get("email", "Unknown")
-        elif project.get("ownerEmail"):
-            owner_email = project.get("ownerEmail")
-        people_table.add_row("Owner", owner_email)
+        if project.owner:
+            people_table.add_row("Owner", project.owner.email)
 
         console.print(people_table)
 
@@ -385,60 +359,57 @@ def get_project(
         time_table.add_column()
 
         # Format timestamps
-        created_at = project.get("createdAt", "")
-        if created_at:
-            time_table.add_row("Created", _format_timestamp(created_at))
+        if project.created_at:
+            time_table.add_row("Created", _format_timestamp(project.created_at))
 
-        last_edited = project.get("lastEditedAt", "")
-        if last_edited:
-            time_table.add_row("Last Edited", _format_timestamp(last_edited))
+        if project.last_edited_at:
+            time_table.add_row("Last Edited", _format_timestamp(project.last_edited_at))
 
-        last_published = project.get("lastPublishedAt")
-        if last_published:
-            time_table.add_row("Last Published", _format_timestamp(last_published))
-
-        archived_at = project.get("archivedAt")
-        if archived_at:
+        if project.last_published_at:
             time_table.add_row(
-                "Archived", f"[red]{_format_timestamp(archived_at)}[/red]"
+                "Last Published", _format_timestamp(project.last_published_at)
             )
 
-        trashed_at = project.get("trashedAt")
-        if trashed_at:
-            time_table.add_row("Trashed", f"[red]{_format_timestamp(trashed_at)}[/red]")
+        if project.archived_at:
+            time_table.add_row(
+                "Archived", f"[red]{_format_timestamp(project.archived_at)}[/red]"
+            )
+
+        if project.trashed_at:
+            time_table.add_row(
+                "Trashed", f"[red]{_format_timestamp(project.trashed_at)}[/red]"
+            )
 
         console.print(time_table)
 
         # Analytics Section
-        analytics = project.get("analytics")
-        if analytics:
+        if project.analytics:
             console.print("\n[bold]📊 Analytics[/bold]")
             analytics_table = Table(show_header=False, box=None, padding=(0, 2))
             analytics_table.add_column(style="dim")
             analytics_table.add_column()
 
             # Last viewed
-            last_viewed = analytics.get("lastViewedAt")
-            if last_viewed:
-                analytics_table.add_row("Last Viewed", _format_timestamp(last_viewed))
+            if project.analytics.last_viewed_at:
+                analytics_table.add_row(
+                    "Last Viewed", _format_timestamp(project.analytics.last_viewed_at)
+                )
 
             # Published results updated
-            pub_results = analytics.get("publishedResultsUpdatedAt")
-            if pub_results:
+            if project.analytics.published_results_updated_at:
                 analytics_table.add_row(
-                    "Results Updated", _format_timestamp(pub_results)
+                    "Results Updated",
+                    _format_timestamp(project.analytics.published_results_updated_at),
                 )
 
             # App views
-            app_views = analytics.get("appViews")
-            if app_views:
+            if project.analytics.app_views:
                 views_str = []
-                if app_views.get("allTime"):
-                    views_str.append(f"All time: {app_views['allTime']:,}")
-                if app_views.get("lastThirtyDays"):
-                    views_str.append(f"30d: {app_views['lastThirtyDays']:,}")
-                if app_views.get("lastSevenDays"):
-                    views_str.append(f"7d: {app_views['lastSevenDays']:,}")
+                views_str.append(f"All time: {project.analytics.app_views.all_time:,}")
+                views_str.append(
+                    f"30d: {project.analytics.app_views.last_thirty_days:,}"
+                )
+                views_str.append(f"7d: {project.analytics.app_views.last_seven_days:,}")
 
                 if views_str:
                     analytics_table.add_row("App Views", " | ".join(views_str))
@@ -447,117 +418,126 @@ def get_project(
                 console.print(analytics_table)
 
         # Categories Section
-        categories = project.get("categories", [])
-        if categories:
+        if project.categories:
             console.print("\n[bold]🏷️  Categories[/bold]")
-            for cat in categories:
-                cat_name = cat.get("name", "Unknown")
-                cat_desc = cat.get("description", "")
-                if cat_desc:
-                    console.print(f"  • {cat_name}: [dim]{cat_desc}[/dim]")
+            for cat in project.categories:
+                if cat.description:
+                    console.print(f"  • {cat.name}: [dim]{cat.description}[/dim]")
                 else:
-                    console.print(f"  • {cat_name}")
+                    console.print(f"  • {cat.name}")
 
         # Reviews Section
-        reviews = project.get("reviews")
-        if reviews:
+        if project.reviews:
             console.print("\n[bold]✅ Reviews[/bold]")
-            required = reviews.get("required", False)
-            console.print(f"  Reviews Required: {'Yes' if required else 'No'}")
+            console.print(
+                f"  Reviews Required: {'Yes' if project.reviews.required else 'No'}"
+            )
 
         # Schedules Section
-        schedules = project.get("schedules", [])
-        if schedules:
+        if project.schedules:
             console.print("\n[bold]📅 Schedules[/bold]")
-            for i, schedule in enumerate(schedules, 1):
-                if not schedule.get("enabled"):
+            for i, schedule in enumerate(project.schedules, 1):
+                if not schedule.enabled:
                     continue
 
-                cadence = schedule.get("cadence", "Unknown")
+                cadence = schedule.cadence.value if schedule.cadence else "Unknown"
                 console.print(f"\n  Schedule {i}: [yellow]{cadence}[/yellow]")
 
                 # Show schedule details based on cadence
-                if cadence == "HOURLY" and schedule.get("hourly"):
-                    details = schedule["hourly"]
+                if schedule.cadence == "HOURLY" and schedule.hourly:
                     console.print(
-                        f"    Runs at: {details.get('minute', 0)} minutes past each hour"
+                        f"    Runs at: {schedule.hourly.minute} minutes past each hour"
                     )
-                    console.print(f"    Timezone: {details.get('timezone', 'UTC')}")
-                elif cadence == "DAILY" and schedule.get("daily"):
-                    details = schedule["daily"]
+                    console.print(f"    Timezone: {schedule.hourly.timezone}")
+                elif schedule.cadence == "DAILY" and schedule.daily:
                     console.print(
-                        f"    Runs at: {details.get('hour', 0):02d}:{details.get('minute', 0):02d}"
+                        f"    Runs at: {schedule.daily.hour:02d}:{schedule.daily.minute:02d}"
                     )
-                    console.print(f"    Timezone: {details.get('timezone', 'UTC')}")
-                elif cadence == "WEEKLY" and schedule.get("weekly"):
-                    details = schedule["weekly"]
-                    console.print(f"    Day: {details.get('dayOfWeek', 'Unknown')}")
+                    console.print(f"    Timezone: {schedule.daily.timezone}")
+                elif schedule.cadence == "WEEKLY" and schedule.weekly:
+                    console.print(f"    Day: {schedule.weekly.day_of_week.value}")
                     console.print(
-                        f"    Time: {details.get('hour', 0):02d}:{details.get('minute', 0):02d}"
+                        f"    Time: {schedule.weekly.hour:02d}:{schedule.weekly.minute:02d}"
                     )
-                    console.print(f"    Timezone: {details.get('timezone', 'UTC')}")
-                elif cadence == "MONTHLY" and schedule.get("monthly"):
-                    details = schedule["monthly"]
-                    console.print(f"    Day: {details.get('day', 1)}")
+                    console.print(f"    Timezone: {schedule.weekly.timezone}")
+                elif schedule.cadence == "MONTHLY" and schedule.monthly:
+                    console.print(f"    Day: {schedule.monthly.day}")
                     console.print(
-                        f"    Time: {details.get('hour', 0):02d}:{details.get('minute', 0):02d}"
+                        f"    Time: {schedule.monthly.hour:02d}:{schedule.monthly.minute:02d}"
                     )
-                    console.print(f"    Timezone: {details.get('timezone', 'UTC')}")
-                elif cadence == "CUSTOM" and schedule.get("custom"):
-                    details = schedule["custom"]
-                    console.print(f"    Cron: {details.get('cron', 'Unknown')}")
-                    console.print(f"    Timezone: {details.get('timezone', 'UTC')}")
+                    console.print(f"    Timezone: {schedule.monthly.timezone}")
+                elif schedule.cadence == "CUSTOM" and schedule.custom:
+                    console.print(f"    Cron: {schedule.custom.cron}")
+                    console.print(f"    Timezone: {schedule.custom.timezone}")
 
         # Sharing Section (if requested)
-        if include_sharing and project.get("sharing"):
+        if include_sharing and project.sharing:
             console.print("\n[bold]🔒 Sharing & Permissions[/bold]")
-            sharing = project["sharing"]
 
             # Workspace access
-            if sharing.get("workspace"):
-                access = sharing["workspace"].get("access", "NONE")
+            if project.sharing.workspace:
+                access = (
+                    project.sharing.workspace.access.value
+                    if project.sharing.workspace.access
+                    else "NONE"
+                )
                 console.print("\n  [bold]Workspace[/bold]")
                 console.print(f"    Access Level: {_format_access_level(access)}")
 
             # Public web access
-            if sharing.get("publicWeb"):
-                access = sharing["publicWeb"].get("access", "NONE")
+            if project.sharing.public_web:
+                access = (
+                    project.sharing.public_web.access.value
+                    if project.sharing.public_web.access
+                    else "NONE"
+                )
                 console.print("\n  [bold]Public Web[/bold]")
                 console.print(f"    Access Level: {_format_access_level(access)}")
 
             # Support access
-            if sharing.get("support"):
-                access = sharing["support"].get("access", "NONE")
+            if project.sharing.support:
+                access = (
+                    project.sharing.support.access.value
+                    if project.sharing.support.access
+                    else "NONE"
+                )
                 console.print("\n  [bold]Support[/bold]")
                 console.print(f"    Access Level: {_format_access_level(access)}")
 
             # Users
-            users = sharing.get("users", [])
-            if users:
-                console.print(f"\n  [bold]Users ({len(users)})[/bold]")
-                for user in users[:5]:  # Show first 5
-                    email = user.get("user", {}).get("email", "Unknown")
-                    access = user.get("access", "NONE")
+            if project.sharing.users:
+                console.print(f"\n  [bold]Users ({len(project.sharing.users)})[/bold]")
+                for user in project.sharing.users[:5]:  # Show first 5
+                    email = user.user.email if user.user else "Unknown"
+                    access = user.access.value if user.access else "NONE"
                     console.print(f"    • {email}: {_format_access_level(access)}")
-                if len(users) > 5:
-                    console.print(f"    ... and {len(users) - 5} more")
+                if len(project.sharing.users) > 5:
+                    console.print(f"    ... and {len(project.sharing.users) - 5} more")
 
             # Groups
-            groups = sharing.get("groups", [])
-            if groups:
-                console.print(f"\n  [bold]Groups ({len(groups)})[/bold]")
-                for group in groups:
-                    name = group.get("group", {}).get("name", "Unknown")
-                    access = group.get("access", "NONE")
+            if project.sharing.groups:
+                console.print(
+                    f"\n  [bold]Groups ({len(project.sharing.groups)})[/bold]"
+                )
+                for group in project.sharing.groups:
+                    name = (
+                        group.group.get("name", "Unknown") if group.group else "Unknown"
+                    )
+                    access = group.access.value if group.access else "NONE"
                     console.print(f"    • {name}: {_format_access_level(access)}")
 
             # Collections
-            collections = sharing.get("collections", [])
-            if collections:
-                console.print(f"\n  [bold]Collections ({len(collections)})[/bold]")
-                for collection in collections:
-                    name = collection.get("collection", {}).get("name", "Unknown")
-                    access = collection.get("access", "NONE")
+            if project.sharing.collections:
+                console.print(
+                    f"\n  [bold]Collections ({len(project.sharing.collections)})[/bold]"
+                )
+                for collection in project.sharing.collections:
+                    name = (
+                        collection.collection.get("name", "Unknown")
+                        if collection.collection
+                        else "Unknown"
+                    )
+                    access = collection.access.value if collection.access else "NONE"
                     console.print(f"    • {name}: {_format_access_level(access)}")
 
         console.print()  # Empty line at the end
@@ -570,7 +550,7 @@ def get_project(
         raise typer.Exit(1) from e
 
 
-def _format_timestamp(timestamp: str) -> str:
+def _format_timestamp(timestamp: str | datetime) -> str:
     """Format ISO timestamp to a more readable format."""
     if not timestamp:
         return "N/A"
@@ -579,7 +559,10 @@ def _format_timestamp(timestamp: str) -> str:
         # Parse and format the timestamp
         from datetime import datetime
 
-        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        if isinstance(timestamp, str):
+            dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        else:
+            dt = timestamp
 
         # Get current time for relative formatting
         now = datetime.now(dt.tzinfo)
@@ -600,8 +583,11 @@ def _format_timestamp(timestamp: str) -> str:
         else:
             return dt.strftime("%Y-%m-%d %H:%M")
     except Exception:
-        # If parsing fails, just return the first part
-        return timestamp[:19]
+        # If parsing fails, return as is
+        if isinstance(timestamp, str):
+            return timestamp[:19]
+        else:
+            return str(timestamp)
 
 
 def _format_access_level(access: str) -> str:
@@ -662,13 +648,12 @@ def run_project(
                 use_cached_sql_results=not no_sql_cache,
             )
 
-        run_id = run_info.get("runId", run_info.get("id"))
         console.print("\n[green]✓[/green] Run started successfully!")
-        console.print(f"Run ID: [cyan]{run_id}[/cyan]")
+        console.print(f"Run ID: [cyan]{run_info.run_id}[/cyan]")
 
-        # Handle different possible field names for URLs
-        run_url = run_info.get("runUrl", run_info.get("url", "N/A"))
-        status_url = run_info.get("runStatusUrl", run_info.get("statusUrl", "N/A"))
+        # Get URLs from response
+        run_url = run_info.run_url
+        status_url = run_info.run_status_url
 
         if run_url and run_url != "N/A":
             console.print(f"Run URL: [blue]{run_url}[/blue]")
@@ -679,7 +664,9 @@ def run_project(
             console.print(
                 f"\n[dim]Waiting for run to complete (polling every {poll_interval}s)...[/dim]"
             )
-            _wait_for_run_completion(client, project_id, run_id, poll_interval)
+            _wait_for_run_completion(
+                client, project_id, str(run_info.run_id), poll_interval
+            )
 
     except HexAPIError as e:
         console.print(f"[red]API Error: {e}[/red]")
@@ -700,18 +687,19 @@ def get_run_status(
         status = client.runs.get_status(project_id, run_id)
 
         console.print("\n[bold]Run Status[/bold]")
+        console.print(f"Run ID: [cyan]{status.run_id}[/cyan]")
+        console.print(f"Project ID: [cyan]{status.project_id}[/cyan]")
         console.print(
-            f"Run ID: [cyan]{status.get('runId', status.get('id', 'N/A'))}[/cyan]"
+            f"Status: {_format_status(status.status.value if status.status else 'N/A')}"
         )
-        console.print(f"Project ID: [cyan]{status.get('projectId', project_id)}[/cyan]")
-        console.print(f"Status: {_format_status(status.get('status'))}")
         console.print(
-            f"Started: {status.get('startTime', status.get('startedAt', 'N/A'))}"
+            f"Started: {_format_timestamp(status.start_time) if status.start_time else 'N/A'}"
         )
-        console.print(f"Ended: {status.get('endTime', status.get('endedAt', 'N/A'))}")
+        console.print(
+            f"Ended: {_format_timestamp(status.end_time) if status.end_time else 'N/A'}"
+        )
 
-        if status.get("error"):
-            console.print(f"\n[red]Error: {status.get('error')}[/red]")
+        # Note: error field not in current model
 
     except HexAPIError as e:
         console.print(f"[red]API Error: {e}[/red]")
@@ -731,14 +719,27 @@ def list_runs(
     """Get the status of API-triggered runs for a project."""
     try:
         client = get_client()
+
+        # Convert status string to enum if provided
+        status_filter = None
+        if status:
+            try:
+                status_filter = RunStatus(status.upper())
+            except ValueError:
+                console.print(f"[red]Invalid status: {status}[/red]")
+                console.print(
+                    "Valid options: PENDING, RUNNING, COMPLETED, FAILED, CANCELLED, KILLED"
+                )
+                raise typer.Exit(1) from None
+
         response = client.runs.list(
             project_id,
             limit=limit,
             offset=offset,
-            status_filter=status,
+            status_filter=status_filter,
         )
 
-        runs = response.get("runs", [])
+        runs = response.runs
 
         if not runs:
             console.print("[yellow]No runs found[/yellow]")
@@ -754,29 +755,35 @@ def list_runs(
 
         for run in runs:
             # Try different field names
-            run_id = run.get("runId", run.get("id", ""))
-            start_time = run.get("startTime", run.get("startedAt", ""))
-            end_time = run.get("endTime", run.get("endedAt", ""))
-            duration = (
-                _calculate_duration(start_time, end_time)
-                if start_time and end_time
-                else "N/A"
+            run_id = str(run.run_id)
+            start_time_str = (
+                _format_timestamp(run.start_time) if run.start_time else "N/A"
             )
+            end_time_str = _format_timestamp(run.end_time) if run.end_time else "N/A"
+
+            # Calculate duration from datetime objects
+            duration = "N/A"
+            if run.start_time and run.end_time:
+                duration_seconds = (run.end_time - run.start_time).total_seconds()
+                if duration_seconds < 60:
+                    duration = f"{int(duration_seconds)}s"
+                else:
+                    hours = int(duration_seconds // 3600)
+                    minutes = int((duration_seconds % 3600) // 60)
+                    duration = f"{hours}h {minutes}m" if hours > 0 else f"{minutes}m"
 
             table.add_row(
                 run_id,
-                _format_status(run.get("status")),
-                start_time[:19] if start_time else "N/A",
-                end_time[:19] if end_time else "N/A",
+                _format_status(run.status.value if run.status else "N/A"),
+                start_time_str,
+                end_time_str,
                 duration,
             )
 
         console.print(table)
 
-        # Show total count
-        total = response.get("totalCount", 0)
-        if total > len(runs):
-            console.print(f"\n[dim]Showing {len(runs)} of {total} total runs[/dim]")
+        # Show count
+        console.print(f"\n[dim]Showing {len(runs)} runs[/dim]")
 
     except HexAPIError as e:
         console.print(f"[red]API Error: {e}[/red]")
@@ -830,30 +837,9 @@ def _format_status(status: str | None) -> str:
     return status_colors.get(status.upper(), status)
 
 
-def _calculate_duration(start_time: str, end_time: str) -> str:
-    """Calculate duration between two timestamps."""
-    try:
-        from datetime import datetime
-
-        start = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-        end = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
-        duration = end - start
-
-        # Format duration
-        seconds = int(duration.total_seconds())
-        if seconds < 60:
-            return f"{seconds}s"
-        elif seconds < 3600:
-            return f"{seconds // 60}m {seconds % 60}s"
-        else:
-            hours = seconds // 3600
-            minutes = (seconds % 3600) // 60
-            return f"{hours}h {minutes}m"
-    except Exception:
-        return "N/A"
-
-
-def _wait_for_run_completion(client, project_id: str, run_id: str, poll_interval: int):
+def _wait_for_run_completion(
+    client: HexClient, project_id: str, run_id: str, poll_interval: int
+):
     """Wait for a run to complete, polling periodically."""
     terminal_states = {"COMPLETED", "FAILED", "CANCELLED", "KILLED"}
 
@@ -868,7 +854,7 @@ def _wait_for_run_completion(client, project_id: str, run_id: str, poll_interval
         while True:
             try:
                 status = client.runs.get_status(project_id, run_id)
-                current_status = status.get("status", "").upper()
+                current_status = status.status.value if status.status else "UNKNOWN"
 
                 progress.update(task, description=f"Status: {current_status}")
 
@@ -878,8 +864,7 @@ def _wait_for_run_completion(client, project_id: str, run_id: str, poll_interval
                         f"\nRun completed with status: {_format_status(current_status)}"
                     )
 
-                    if current_status == "FAILED" and status.get("error"):
-                        console.print(f"[red]Error: {status.get('error')}[/red]")
+                    # Note: error field not in current model
 
                     break
 

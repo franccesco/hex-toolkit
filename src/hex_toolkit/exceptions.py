@@ -1,15 +1,17 @@
 """Exceptions for the Hex API SDK."""
 
+from typing import Any
+
 
 class HexAPIError(Exception):
     """Base exception for all Hex API errors."""
 
     def __init__(
         self,
-        message,
-        status_code=None,
-        response_data=None,
-        trace_id=None,
+        message: str,
+        status_code: int | None = None,
+        response_data: dict[str, Any] | None = None,
+        trace_id: str | None = None,
     ):
         super().__init__(message)
         self.message = message
@@ -43,12 +45,12 @@ class HexValidationError(HexAPIError):
 
     def __init__(
         self,
-        message,
-        status_code=None,
-        response_data=None,
-        trace_id=None,
-        invalid_params=None,
-        not_found_params=None,
+        message: str,
+        status_code: int | None = None,
+        response_data: dict[str, Any] | None = None,
+        trace_id: str | None = None,
+        invalid_params: list[dict[str, Any]] | None = None,
+        not_found_params: list[dict[str, Any]] | None = None,
     ):
         super().__init__(message, status_code, response_data, trace_id)
         self.invalid_params = invalid_params or []
@@ -60,11 +62,11 @@ class HexRateLimitError(HexAPIError):
 
     def __init__(
         self,
-        message,
-        status_code=None,
-        response_data=None,
-        trace_id=None,
-        retry_after=None,
+        message: str,
+        status_code: int | None = None,
+        response_data: dict[str, Any] | None = None,
+        trace_id: str | None = None,
+        retry_after: int | None = None,
     ):
         super().__init__(message, status_code, response_data, trace_id)
         self.retry_after = retry_after
