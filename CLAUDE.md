@@ -151,9 +151,8 @@ The OpenAPI validation ensures your SDK stays in sync with the API with minimal 
 ## Best Practices
 
 - bump version according to semver before commiting changes
-- Run uv sync when bumping so the new version always appears in `uv.lock`
+- Run `uv sync --all-extras` when bumping so the new version always appears in `uv.lock`
 
 ## Memories
 
 - Run ruff and pyright after refactors or additions to make sure our code is of high-quality
-- We're running a packages with different dependencies for CLI and MCP. Run `uv sync --all-extras` to make sure all dependencies are installed.
