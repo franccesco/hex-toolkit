@@ -1,8 +1,11 @@
 """Tests for the projects resource."""
 
 from unittest.mock import Mock
+from uuid import UUID
 
 from hex_toolkit.client import HexClient
+from hex_toolkit.models.projects import Project, ProjectList
+from hex_toolkit.models.runs import ProjectRunResponse
 
 
 class TestProjectsResource:
@@ -17,10 +20,10 @@ class TestProjectsResource:
 
         project = hex_client.projects.get("12345678-1234-1234-1234-123456789012")
 
-        assert isinstance(project, dict)
-        assert project["id"] == "12345678-1234-1234-1234-123456789012"
-        assert project["title"] == "Test Project"
-        assert project["type"] == "PROJECT"
+        assert isinstance(project, Project)
+        assert project.id == UUID("12345678-1234-1234-1234-123456789012")
+        assert project.title == "Test Project"
+        assert project.type == "PROJECT"
 
         hex_client._client.request.assert_called_once_with(
             "GET",
@@ -47,8 +50,8 @@ class TestProjectsResource:
             "12345678-1234-1234-1234-123456789012", include_sharing=True
         )
 
-        assert "sharing" in project
-        assert project["sharing"]["workspace"]["access"] == "CAN_VIEW"
+        assert project.sharing is not None
+        assert project.sharing.workspace.access == "CAN_VIEW"
 
         hex_client._client.request.assert_called_once_with(
             "GET",
@@ -69,11 +72,10 @@ class TestProjectsResource:
 
         result = hex_client.projects.list(limit=10)
 
-        assert isinstance(result, dict)
-        assert "values" in result
-        assert "pagination" in result
-        assert len(result["values"]) == 1
-        assert result["pagination"]["after"] == "cursor123"
+        assert isinstance(result, ProjectList)
+        assert len(result.values) == 1
+        assert result.values[0].id == UUID("12345678-1234-1234-1234-123456789012")
+        assert result.pagination.after == "cursor123"
 
         hex_client._client.request.assert_called_once()
         call_args = hex_client._client.request.call_args
@@ -93,9 +95,9 @@ class TestProjectsResource:
             dry_run=True,
         )
 
-        assert isinstance(result, dict)
-        assert result["runId"] == "87654321-4321-4321-4321-210987654321"
-        assert result["runUrl"] == "https://test.hex.tech/app/runs/test-run"
+        assert isinstance(result, ProjectRunResponse)
+        assert result.run_id == UUID("87654321-4321-4321-4321-210987654321")
+        assert result.run_url == "https://test.hex.tech/app/runs/test-run"
 
         hex_client._client.request.assert_called_once_with(
             "POST",
@@ -103,5 +105,7 @@ class TestProjectsResource:
             json={
                 "inputParams": {"param1": "value1"},
                 "dryRun": True,
+                "updatePublishedResults": False,
+                "useCachedSqlResults": True,
             },
         )

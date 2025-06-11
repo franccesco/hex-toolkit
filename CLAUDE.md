@@ -62,11 +62,9 @@ Custom exception hierarchy in `exceptions.py`:
 
 1. **Synchronous Only**: The SDK is synchronous-only for simplicity. Async was removed as it's overkill for most Hex API use cases.
 
-2. **No Type System**: No Pydantic, no type hints, no model classes. Just simple Python with dicts and lists.
+2. **Direct API Mapping**: Response fields use the same names as the API (camelCase) for transparency.
 
-3. **Direct API Mapping**: Response fields use the same names as the API (camelCase) for transparency.
-
-4. **Resource Methods**: Resources use method names that match the API actions (e.g., `projects.run()` not `projects.create_run()`).
+3. **Resource Methods**: Resources use method names that match the API actions (e.g., `projects.run()` not `projects.create_run()`).
 
 ## Testing
 
@@ -106,7 +104,7 @@ uv run pytest -m integration
 
 The SDK implements these Hex API endpoints:
 - `GET/POST /v1/projects/*` - Project operations
-- `GET/POST/DELETE /v1/projects/{id}/runs/*` - Run management  
+- `GET/POST/DELETE /v1/projects/{id}/runs/*` - Run management
 - `POST /v1/embedding/createPresignedUrl/{id}` - Embedding
 - `POST /v1/semantic-models/{id}/ingest` - Semantic models
 

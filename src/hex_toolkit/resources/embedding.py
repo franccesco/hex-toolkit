@@ -1,5 +1,13 @@
 """Embedding resource for the Hex API SDK."""
 
+from typing import Any
+from uuid import UUID
+
+from hex_toolkit.models.embedding import (
+    DisplayOptions,
+    EmbeddingRequest,
+    EmbeddingResponse,
+)
 from hex_toolkit.resources.base import BaseResource
 
 
@@ -8,14 +16,14 @@ class EmbeddingResource(BaseResource):
 
     def create_presigned_url(
         self,
-        project_id,
-        hex_user_attributes=None,
-        scope=None,
-        input_parameters=None,
-        expires_in=None,
-        display_options=None,
-        test_mode=False,
-    ):
+        project_id: str | UUID,
+        hex_user_attributes: dict[str, str] | None = None,
+        scope: list[str] | None = None,
+        input_parameters: dict[str, Any] | None = None,
+        expires_in: float | None = None,
+        display_options: DisplayOptions | None = None,
+        test_mode: bool = False,
+    ) -> EmbeddingResponse:
         """Create an embedded URL for a project.
 
         Args:
@@ -28,24 +36,19 @@ class EmbeddingResource(BaseResource):
             test_mode: Run in test mode without counting towards limits
 
         Returns:
-            Dict with 'url' key containing the presigned URL
+            EmbeddingResponse with the presigned URL
         """
-        # Build request data
-        request_data = {}
-        if hex_user_attributes is not None:
-            request_data["hexUserAttributes"] = hex_user_attributes
-        if scope is not None:
-            request_data["scope"] = scope
-        if input_parameters is not None:
-            request_data["inputParameters"] = input_parameters
-        if expires_in is not None:
-            request_data["expiresIn"] = expires_in
-        if display_options is not None:
-            request_data["displayOptions"] = display_options
-        if test_mode:
-            request_data["testMode"] = test_mode
-
-        return self._post(
-            f"/v1/embedding/createPresignedUrl/{project_id}",
-            json=request_data,
+        request = EmbeddingRequest(
+            hex_user_attributes=hex_user_attributes,
+            scope=scope,
+            input_parameters=input_parameters,
+            expires_in=expires_in,
+            display_options=display_options,
+            test_mode=test_mode,
         )
+
+        data = self._post(
+            f"/v1/embedding/createPresignedUrl/{project_id}",
+            json=request.model_dump(exclude_none=True, by_alias=True),
+        )
+        return self._parse_response(data, EmbeddingResponse)

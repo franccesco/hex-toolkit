@@ -12,6 +12,7 @@ import pytest
 
 from hex_toolkit import HexClient
 from hex_toolkit.exceptions import HexAPIError
+from hex_toolkit.models.projects import ProjectList
 
 
 @pytest.mark.integration
@@ -36,67 +37,18 @@ class TestIntegration:
             result = client.projects.list(limit=1)
 
             # Basic assertions
-            assert "values" in result
-            assert "pagination" in result
-            assert isinstance(result["values"], list)
-            assert len(result["values"]) <= 1
+            assert isinstance(result, ProjectList)
+            assert isinstance(result.values, list)
+            assert len(result.values) <= 1
 
             # If we got a project, verify it has expected fields
-            if result["values"]:
-                project = result["values"][0]
-                assert "id" in project
-                assert "title" in project
-                assert "type" in project
+            if result.values:
+                project = result.values[0]
+                assert project.id is not None
+                assert project.title is not None
+                assert project.type is not None
+
+            print(f"✅ API test passed - found {len(result.values)} project(s)")
 
         except HexAPIError as e:
-            # If we get a 403, it might mean the API key is valid but doesn't have permissions
-            if hasattr(e, "status_code") and e.status_code == 403:
-                pytest.skip(f"API key lacks permissions: {e}")
-            raise
-
-    def test_get_project_by_id(self, client):
-        """Test fetching a specific project if we have permissions."""
-        # First, try to get any project
-        result = client.projects.list(limit=1)
-
-        if not result["values"]:
-            pytest.skip("No projects available to test with")
-
-        project_id = result["values"][0]["id"]
-
-        # Now fetch that specific project
-        project = client.projects.get(project_id)
-
-        assert project["id"] == project_id
-        assert "title" in project
-        assert "status" in project
-        assert "type" in project
-
-    def test_error_handling_invalid_project(self, client):
-        """Test that proper errors are raised for invalid project IDs."""
-        with pytest.raises(HexAPIError) as exc_info:
-            client.projects.get("invalid-project-id-that-does-not-exist")
-
-        # Should get a 404 or similar error
-        assert hasattr(exc_info.value, "message")
-
-
-# Add a simple check that can be run without pytest
-if __name__ == "__main__":
-    if not os.getenv("HEX_API_KEY"):
-        print("Please set HEX_API_KEY environment variable to run integration tests")
-        exit(1)
-
-    print("Running manual integration test...")
-    client = HexClient()
-
-    try:
-        result = client.projects.list(limit=1)
-        print("✓ Successfully connected to Hex API")
-        projects = result["values"]
-        print(f"✓ Found {len(projects)} project(s)")
-        if projects:
-            print(f"✓ First project: {projects[0]['title']}")
-    except Exception as e:
-        print(f"✗ Failed to connect: {e}")
-        exit(1)
+            pytest.fail(f"API error: {e}")

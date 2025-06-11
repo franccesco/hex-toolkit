@@ -1,8 +1,14 @@
 """Tests for the runs resource."""
 
 from unittest.mock import Mock
+from uuid import UUID
 
 from hex_toolkit.client import HexClient
+from hex_toolkit.models.runs import (
+    ProjectRunsResponse,
+    ProjectStatusResponse,
+    RunStatus,
+)
 
 
 class TestRunsResource:
@@ -13,6 +19,8 @@ class TestRunsResource:
         status_data = {
             "projectId": "12345678-1234-1234-1234-123456789012",
             "runId": "87654321-4321-4321-4321-210987654321",
+            "runUrl": "https://test.hex.tech/app/runs/test-run",
+            "projectVersion": 42,
             "status": "COMPLETED",
             "startTime": "2024-01-01T00:00:00Z",
             "endTime": "2024-01-01T00:01:00Z",
@@ -26,9 +34,10 @@ class TestRunsResource:
             "87654321-4321-4321-4321-210987654321",
         )
 
-        assert isinstance(result, dict)
-        assert result["status"] == "COMPLETED"
-        assert result["elapsedTime"] == 60000
+        assert isinstance(result, ProjectStatusResponse)
+        assert result.status == RunStatus.COMPLETED
+        assert result.elapsed_time == 60000
+        assert result.project_id == UUID("12345678-1234-1234-1234-123456789012")
 
         hex_client._client.request.assert_called_once_with(
             "GET",
@@ -40,12 +49,18 @@ class TestRunsResource:
         runs_data = {
             "runs": [
                 {
-                    "runId": "run-1",
+                    "projectId": "12345678-1234-1234-1234-123456789012",
+                    "projectVersion": 42,
+                    "runId": "11111111-1111-1111-1111-111111111111",
+                    "runUrl": "https://test.hex.tech/app/runs/run-1",
                     "status": "COMPLETED",
                     "startTime": "2024-01-01T00:00:00Z",
                 },
                 {
-                    "runId": "run-2",
+                    "projectId": "12345678-1234-1234-1234-123456789012",
+                    "projectVersion": 42,
+                    "runId": "22222222-2222-2222-2222-222222222222",
+                    "runUrl": "https://test.hex.tech/app/runs/run-2",
                     "status": "RUNNING",
                     "startTime": "2024-01-01T00:05:00Z",
                 },
@@ -58,14 +73,14 @@ class TestRunsResource:
         result = hex_client.runs.list(
             "12345678-1234-1234-1234-123456789012",
             limit=10,
-            status_filter="COMPLETED",
+            status_filter=RunStatus.COMPLETED,
         )
 
-        assert isinstance(result, dict)
-        assert "runs" in result
-        assert len(result["runs"]) == 2
-        assert result["runs"][0]["status"] == "COMPLETED"
-        assert result["nextPage"] == "cursor123"
+        assert isinstance(result, ProjectRunsResponse)
+        assert len(result.runs) == 2
+        assert result.runs[0].status == RunStatus.COMPLETED
+        assert result.runs[1].status == RunStatus.RUNNING
+        assert result.next_page == "cursor123"
 
         hex_client._client.request.assert_called_once_with(
             "GET",

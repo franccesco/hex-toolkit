@@ -1,5 +1,7 @@
 """Main client for the Hex API SDK."""
 
+from typing import Any
+
 import httpx
 
 from hex_toolkit.auth import HexAuth
@@ -23,11 +25,11 @@ class HexClient:
 
     def __init__(
         self,
-        api_key=None,
-        base_url=None,
-        config=None,
-        **kwargs,
-    ):
+        api_key: str | None = None,
+        base_url: str | None = None,
+        config: HexConfig | None = None,
+        **kwargs: Any,
+    ) -> None:
         """Initialize the Hex client.
 
         Args:
@@ -63,10 +65,10 @@ class HexClient:
 
     def request(
         self,
-        method,
-        path,
-        **kwargs,
-    ):
+        method: str,
+        path: str,
+        **kwargs: Any,
+    ) -> httpx.Response:
         """Make a request to the API."""
         response = self._client.request(method, path, **kwargs)
 
@@ -75,7 +77,7 @@ class HexClient:
 
         return response
 
-    def _handle_response_error(self, response):
+    def _handle_response_error(self, response: httpx.Response) -> None:
         """Handle error responses from the API."""
         try:
             error_data = response.json()
@@ -142,12 +144,12 @@ class HexClient:
                 trace_id=trace_id,
             )
 
-    def close(self):
+    def close(self) -> None:
         """Close the HTTP client."""
         self._client.close()
 
-    def __enter__(self):
+    def __enter__(self) -> "HexClient":
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: Any) -> None:
         self.close()

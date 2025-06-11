@@ -1,14 +1,20 @@
 """Configuration for the Hex API SDK."""
 
 import os
+from typing import Any
 
 
 class HexConfig:
     """Configuration for the Hex API client."""
 
     def __init__(
-        self, api_key=None, base_url=None, timeout=30.0, max_retries=3, verify_ssl=True
-    ):
+        self,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        timeout: float = 30.0,
+        max_retries: int = 3,
+        verify_ssl: bool = True,
+    ) -> None:
         """Initialize configuration.
 
         Args:
@@ -21,14 +27,14 @@ class HexConfig:
         if not api_key:
             raise ValueError("API key cannot be empty")
 
-        self.api_key = api_key.strip()
-        self.base_url = (base_url or "https://app.hex.tech/api").rstrip("/")
-        self.timeout = timeout
-        self.max_retries = max_retries
-        self.verify_ssl = verify_ssl
+        self.api_key: str = api_key.strip()
+        self.base_url: str = (base_url or "https://app.hex.tech/api").rstrip("/")
+        self.timeout: float = timeout
+        self.max_retries: int = max_retries
+        self.verify_ssl: bool = verify_ssl
 
     @classmethod
-    def from_env(cls, **overrides):
+    def from_env(cls, **overrides: Any) -> "HexConfig":
         """Create config from environment variables with optional overrides."""
         # Get API key from overrides or environment
         api_key = overrides.get("api_key") or os.getenv("HEX_API_KEY")
