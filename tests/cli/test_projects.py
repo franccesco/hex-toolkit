@@ -12,7 +12,9 @@ from hex_toolkit.models.projects import SortBy, SortDirection
 class TestProjectsList:
     """Test 'hex projects list' command."""
 
-    def test_list_basic(self, runner, mock_env_api_key, mock_hex_client, mock_list_response):  # noqa: ARG002
+    def test_list_basic(
+        self, runner, mock_env_api_key, mock_hex_client, mock_list_response
+    ):  # noqa: ARG002
         """Test basic project listing."""
         mock_hex_client.projects.list.return_value = mock_list_response
 
@@ -35,7 +37,9 @@ class TestProjectsList:
             sort_direction=None,
         )
 
-    def test_list_with_limit(self, runner, mock_env_api_key, mock_hex_client, mock_list_response):  # noqa: ARG002
+    def test_list_with_limit(
+        self, runner, mock_env_api_key, mock_hex_client, mock_list_response
+    ):  # noqa: ARG002
         """Test listing with custom limit."""
         mock_hex_client.projects.list.return_value = mock_list_response
 
@@ -45,17 +49,25 @@ class TestProjectsList:
         mock_hex_client.projects.list.assert_called_once()
         assert mock_hex_client.projects.list.call_args[1]["limit"] == 50
 
-    def test_list_with_filters(self, runner, mock_env_api_key, mock_hex_client, mock_list_response):  # noqa: ARG002
+    def test_list_with_filters(
+        self, runner, mock_env_api_key, mock_hex_client, mock_list_response
+    ):  # noqa: ARG002
         """Test listing with various filters."""
         mock_hex_client.projects.list.return_value = mock_list_response
 
-        result = runner.invoke(app, [
-            "projects", "list",
-            "--include-archived",
-            "--include-trashed",
-            "--creator-email", "creator@test.com",
-            "--owner-email", "owner@test.com",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "projects",
+                "list",
+                "--include-archived",
+                "--include-trashed",
+                "--creator-email",
+                "creator@test.com",
+                "--owner-email",
+                "owner@test.com",
+            ],
+        )
 
         assert result.exit_code == 0
         mock_hex_client.projects.list.assert_called_once_with(
@@ -68,7 +80,9 @@ class TestProjectsList:
             sort_direction=None,
         )
 
-    def test_list_with_sort_ascending(self, runner, mock_env_api_key, mock_hex_client, mock_list_response):  # noqa: ARG002
+    def test_list_with_sort_ascending(
+        self, runner, mock_env_api_key, mock_hex_client, mock_list_response
+    ):  # noqa: ARG002
         """Test listing with ascending sort."""
         mock_hex_client.projects.list.return_value = mock_list_response
 
@@ -76,10 +90,17 @@ class TestProjectsList:
 
         assert result.exit_code == 0
         mock_hex_client.projects.list.assert_called_once()
-        assert mock_hex_client.projects.list.call_args[1]["sort_by"] == SortBy.CREATED_AT
-        assert mock_hex_client.projects.list.call_args[1]["sort_direction"] == SortDirection.ASC
+        assert (
+            mock_hex_client.projects.list.call_args[1]["sort_by"] == SortBy.CREATED_AT
+        )
+        assert (
+            mock_hex_client.projects.list.call_args[1]["sort_direction"]
+            == SortDirection.ASC
+        )
 
-    def test_list_with_sort_descending(self, runner, mock_env_api_key, mock_hex_client, mock_list_response):  # noqa: ARG002
+    def test_list_with_sort_descending(
+        self, runner, mock_env_api_key, mock_hex_client, mock_list_response
+    ):  # noqa: ARG002
         """Test listing with descending sort."""
         mock_hex_client.projects.list.return_value = mock_list_response
 
@@ -87,8 +108,14 @@ class TestProjectsList:
 
         assert result.exit_code == 0
         mock_hex_client.projects.list.assert_called_once()
-        assert mock_hex_client.projects.list.call_args[1]["sort_by"] == SortBy.LAST_EDITED_AT
-        assert mock_hex_client.projects.list.call_args[1]["sort_direction"] == SortDirection.DESC
+        assert (
+            mock_hex_client.projects.list.call_args[1]["sort_by"]
+            == SortBy.LAST_EDITED_AT
+        )
+        assert (
+            mock_hex_client.projects.list.call_args[1]["sort_direction"]
+            == SortDirection.DESC
+        )
 
     def test_list_invalid_sort_field(self, runner, mock_env_api_key):  # noqa: ARG002
         """Test error with invalid sort field."""
@@ -97,14 +124,21 @@ class TestProjectsList:
         assert result.exit_code == 1
         assert "Invalid sort field 'invalid_field'" in result.output
 
-    def test_list_custom_columns(self, runner, mock_env_api_key, mock_hex_client, mock_list_response):  # noqa: ARG002
+    def test_list_custom_columns(
+        self, runner, mock_env_api_key, mock_hex_client, mock_list_response
+    ):  # noqa: ARG002
         """Test listing with custom columns."""
         mock_hex_client.projects.list.return_value = mock_list_response
 
-        result = runner.invoke(app, [
-            "projects", "list",
-            "--columns", "id,name,creator,last_viewed_at,app_views"
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "projects",
+                "list",
+                "--columns",
+                "id,name,creator,last_viewed_at,app_views",
+            ],
+        )
 
         assert result.exit_code == 0
         # Table should include custom columns
@@ -121,7 +155,9 @@ class TestProjectsList:
         assert result.exit_code == 0
         assert "No projects found" in result.output
 
-    def test_list_with_pagination_hint(self, runner, mock_env_api_key, mock_hex_client, mock_list_response):  # noqa: ARG002
+    def test_list_with_pagination_hint(
+        self, runner, mock_env_api_key, mock_hex_client, mock_list_response
+    ):  # noqa: ARG002
         """Test pagination hint is shown."""
         mock_list_response.pagination.after = "next-cursor"
         mock_hex_client.projects.list.return_value = mock_list_response
@@ -142,7 +178,9 @@ class TestProjectsList:
         assert result.exit_code == 1
         assert "API Error" in result.output
 
-    def test_list_with_search(self, runner, mock_env_api_key, mock_hex_client, sample_projects):  # noqa: ARG002
+    def test_list_with_search(
+        self, runner, mock_env_api_key, mock_hex_client, sample_projects
+    ):  # noqa: ARG002
         """Test project search functionality."""
         # Mock paginated responses
         mock_hex_client.projects.list.side_effect = [
@@ -178,11 +216,15 @@ class TestProjectsGet:
             "project-123", include_sharing=False
         )
 
-    def test_get_with_sharing(self, runner, mock_env_api_key, mock_hex_client, sample_project):  # noqa: ARG002
+    def test_get_with_sharing(
+        self, runner, mock_env_api_key, mock_hex_client, sample_project
+    ):  # noqa: ARG002
         """Test project retrieval with sharing info."""
         mock_hex_client.projects.get.return_value = sample_project
 
-        result = runner.invoke(app, ["projects", "get", "project-123", "--include-sharing"])
+        result = runner.invoke(
+            app, ["projects", "get", "project-123", "--include-sharing"]
+        )
         assert result.exit_code == 0
         assert "Sharing & Permissions" in result.output
         assert "Workspace" in result.output
@@ -221,7 +263,7 @@ class TestProjectsGet:
             analytics=Mock(
                 last_viewed_at=datetime.now(),
                 published_results_updated_at=datetime.now(),
-                app_views=Mock(all_time=1000, last_thirty_days=100, last_seven_days=25)
+                app_views=Mock(all_time=1000, last_thirty_days=100, last_seven_days=25),
             ),
             categories=[Mock(name="Category1", description="Desc1")],
             reviews=Mock(required=True),
@@ -229,17 +271,21 @@ class TestProjectsGet:
                 Mock(
                     enabled=True,
                     cadence=Mock(value="DAILY"),
-                    daily=Mock(hour=10, minute=30, timezone="UTC")
+                    daily=Mock(hour=10, minute=30, timezone="UTC"),
                 )
             ],
             sharing=Mock(
                 workspace=Mock(access=Mock(value="CAN_VIEW")),
                 public_web=Mock(access=Mock(value="NONE")),
                 support=Mock(access=Mock(value="NONE")),
-                users=[Mock(user=Mock(email="user@test.com"), access=Mock(value="CAN_EDIT"))],
+                users=[
+                    Mock(
+                        user=Mock(email="user@test.com"), access=Mock(value="CAN_EDIT")
+                    )
+                ],
                 groups=[],
-                collections=[]
-            )
+                collections=[],
+            ),
         )
 
         mock_hex_client.projects.get.return_value = project
@@ -261,7 +307,9 @@ class TestProjectsGet:
 class TestProjectsRun:
     """Test 'hex projects run' command."""
 
-    def test_run_basic(self, runner, mock_env_api_key, mock_hex_client, sample_run_info):  # noqa: ARG002
+    def test_run_basic(
+        self, runner, mock_env_api_key, mock_hex_client, sample_run_info
+    ):  # noqa: ARG002
         """Test basic project run."""
         mock_hex_client.projects.run.return_value = sample_run_info
 
@@ -279,16 +327,23 @@ class TestProjectsRun:
             use_cached_sql_results=True,
         )
 
-    def test_run_with_options(self, runner, mock_env_api_key, mock_hex_client, sample_run_info):  # noqa: ARG002
+    def test_run_with_options(
+        self, runner, mock_env_api_key, mock_hex_client, sample_run_info
+    ):  # noqa: ARG002
         """Test project run with various options."""
         mock_hex_client.projects.run.return_value = sample_run_info
 
-        result = runner.invoke(app, [
-            "projects", "run", "project-123",
-            "--dry-run",
-            "--update-cache",
-            "--no-sql-cache",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "projects",
+                "run",
+                "project-123",
+                "--dry-run",
+                "--update-cache",
+                "--no-sql-cache",
+            ],
+        )
 
         assert result.exit_code == 0
         mock_hex_client.projects.run.assert_called_once_with(
@@ -299,15 +354,23 @@ class TestProjectsRun:
             use_cached_sql_results=False,
         )
 
-    def test_run_with_input_params(self, runner, mock_env_api_key, mock_hex_client, sample_run_info):  # noqa: ARG002
+    def test_run_with_input_params(
+        self, runner, mock_env_api_key, mock_hex_client, sample_run_info
+    ):  # noqa: ARG002
         """Test project run with input parameters."""
         mock_hex_client.projects.run.return_value = sample_run_info
         params = {"key": "value", "number": 42}
 
-        result = runner.invoke(app, [
-            "projects", "run", "project-123",
-            "--input-params", json.dumps(params),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "projects",
+                "run",
+                "project-123",
+                "--input-params",
+                json.dumps(params),
+            ],
+        )
 
         assert result.exit_code == 0
         mock_hex_client.projects.run.assert_called_once()
@@ -315,15 +378,23 @@ class TestProjectsRun:
 
     def test_run_invalid_json_params(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
         """Test error with invalid JSON parameters."""
-        result = runner.invoke(app, [
-            "projects", "run", "project-123",
-            "--input-params", "invalid json",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "projects",
+                "run",
+                "project-123",
+                "--input-params",
+                "invalid json",
+            ],
+        )
 
         assert result.exit_code == 1
         assert "Invalid JSON for input parameters" in result.output
 
-    def test_run_with_wait(self, runner, mock_env_api_key, mock_hex_client, sample_run_info):  # noqa: ARG002
+    def test_run_with_wait(
+        self, runner, mock_env_api_key, mock_hex_client, sample_run_info
+    ):  # noqa: ARG002
         """Test project run with --wait flag."""
         mock_hex_client.projects.run.return_value = sample_run_info
 
@@ -335,26 +406,39 @@ class TestProjectsRun:
         ]
 
         with patch("time.sleep"):  # Don't actually sleep in tests
-            result = runner.invoke(app, [
-                "projects", "run", "project-123",
-                "--wait",
-                "--poll-interval", "1",
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "projects",
+                    "run",
+                    "project-123",
+                    "--wait",
+                    "--poll-interval",
+                    "1",
+                ],
+            )
 
         assert result.exit_code == 0
         assert "Waiting for run to complete" in result.output
         assert "Run completed with status" in result.output
         assert mock_hex_client.runs.get_status.call_count == 3
 
-    def test_run_wait_keyboard_interrupt(self, runner, mock_env_api_key, mock_hex_client, sample_run_info):  # noqa: ARG002
+    def test_run_wait_keyboard_interrupt(
+        self, runner, mock_env_api_key, mock_hex_client, sample_run_info
+    ):  # noqa: ARG002
         """Test interrupting wait with keyboard interrupt."""
         mock_hex_client.projects.run.return_value = sample_run_info
         mock_hex_client.runs.get_status.side_effect = KeyboardInterrupt()
 
-        result = runner.invoke(app, [
-            "projects", "run", "project-123",
-            "--wait",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "projects",
+                "run",
+                "project-123",
+                "--wait",
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Polling cancelled by user" in result.output

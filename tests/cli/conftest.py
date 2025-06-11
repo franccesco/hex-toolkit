@@ -96,6 +96,7 @@ def sample_project():
 def sample_projects(sample_project):  # noqa: ARG001
     """Create a list of sample projects."""
     import uuid
+
     projects = []
     for i in range(3):
         project = Project(
@@ -188,4 +189,3 @@ def mock_progress():
     """Mock Rich Progress to avoid output during tests."""
     with patch("hex_toolkit.cli.Progress") as mock:
         yield mock
-

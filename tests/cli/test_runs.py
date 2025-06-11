@@ -10,7 +10,9 @@ from hex_toolkit.models.runs import RunStatus
 class TestRunsStatus:
     """Test 'hex runs status' command."""
 
-    def test_status_basic(self, runner, mock_env_api_key, mock_hex_client, sample_run_status):  # noqa: ARG002
+    def test_status_basic(
+        self, runner, mock_env_api_key, mock_hex_client, sample_run_status
+    ):  # noqa: ARG002
         """Test basic run status retrieval."""
         mock_hex_client.runs.get_status.return_value = sample_run_status
 
@@ -21,7 +23,9 @@ class TestRunsStatus:
         assert sample_run_status.run_id in result.output
         assert "COMPLETED" in result.output
 
-        mock_hex_client.runs.get_status.assert_called_once_with("project-123", "run-456")
+        mock_hex_client.runs.get_status.assert_called_once_with(
+            "project-123", "run-456"
+        )
 
     def test_status_running(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
         """Test status display for running job."""
@@ -87,15 +91,24 @@ class TestRunsList:
             status_filter=None,
         )
 
-    def test_list_with_options(self, runner, mock_env_api_key, mock_hex_client, sample_runs):  # noqa: ARG002
+    def test_list_with_options(
+        self, runner, mock_env_api_key, mock_hex_client, sample_runs
+    ):  # noqa: ARG002
         """Test run listing with options."""
         mock_hex_client.runs.list.return_value = Mock(runs=sample_runs[:2])
 
-        result = runner.invoke(app, [
-            "runs", "list", "project-123",
-            "--limit", "20",
-            "--offset", "5",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "runs",
+                "list",
+                "project-123",
+                "--limit",
+                "20",
+                "--offset",
+                "5",
+            ],
+        )
 
         assert result.exit_code == 0
         mock_hex_client.runs.list.assert_called_once_with(
@@ -109,30 +122,49 @@ class TestRunsList:
         """Test run listing with status filter."""
         from datetime import datetime
 
-        completed_runs = [Mock(
-            run_id="run-1",
-            status="COMPLETED",
-            start_time=datetime(2024, 1, 1, 10, 0, 0),
-            end_time=datetime(2024, 1, 1, 10, 5, 0),
-        )]
+        completed_runs = [
+            Mock(
+                run_id="run-1",
+                status="COMPLETED",
+                start_time=datetime(2024, 1, 1, 10, 0, 0),
+                end_time=datetime(2024, 1, 1, 10, 5, 0),
+            )
+        ]
         mock_hex_client.runs.list.return_value = Mock(runs=completed_runs)
 
-        result = runner.invoke(app, [
-            "runs", "list", "project-123",
-            "--status", "completed",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "runs",
+                "list",
+                "project-123",
+                "--status",
+                "completed",
+            ],
+        )
 
         assert result.exit_code == 0
         mock_hex_client.runs.list.assert_called_once()
         # Check that RunStatus enum was used
-        assert mock_hex_client.runs.list.call_args[1]["status_filter"] == RunStatus.COMPLETED
+        assert (
+            mock_hex_client.runs.list.call_args[1]["status_filter"]
+            == RunStatus.COMPLETED
+        )
 
-    def test_list_invalid_status_filter(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_list_invalid_status_filter(
+        self, runner, mock_env_api_key, mock_hex_client
+    ):  # noqa: ARG002
         """Test error with invalid status filter."""
-        result = runner.invoke(app, [
-            "runs", "list", "project-123",
-            "--status", "invalid-status",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "runs",
+                "list",
+                "project-123",
+                "--status",
+                "invalid-status",
+            ],
+        )
 
         assert result.exit_code == 1
         assert "Invalid status: invalid-status" in result.output
@@ -177,10 +209,12 @@ class TestRunsList:
 
         assert result.exit_code == 0
         assert "30s" in result.output  # Short run
-        assert "5m" in result.output   # Medium run
+        assert "5m" in result.output  # Medium run
         assert "2h 30m" in result.output  # Long run
 
-    def test_list_shows_count(self, runner, mock_env_api_key, mock_hex_client, sample_runs):  # noqa: ARG002
+    def test_list_shows_count(
+        self, runner, mock_env_api_key, mock_hex_client, sample_runs
+    ):  # noqa: ARG002
         """Test run count is displayed."""
         mock_hex_client.runs.list.return_value = Mock(runs=sample_runs)
 
@@ -198,7 +232,9 @@ class TestRunsCancel:
         mock_hex_client.runs.cancel.return_value = None
 
         # Simulate user confirming
-        result = runner.invoke(app, ["runs", "cancel", "project-123", "run-456"], input="y\n")
+        result = runner.invoke(
+            app, ["runs", "cancel", "project-123", "run-456"], input="y\n"
+        )
 
         assert result.exit_code == 0
         assert "Are you sure you want to cancel run run-456?" in result.output
@@ -208,7 +244,9 @@ class TestRunsCancel:
     def test_cancel_declined(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
         """Test cancel declined by user."""
         # Simulate user declining
-        result = runner.invoke(app, ["runs", "cancel", "project-123", "run-456"], input="n\n")
+        result = runner.invoke(
+            app, ["runs", "cancel", "project-123", "run-456"], input="n\n"
+        )
 
         assert result.exit_code == 0
         assert "Are you sure you want to cancel run run-456?" in result.output
@@ -219,7 +257,9 @@ class TestRunsCancel:
         """Test cancel with --yes flag skips confirmation."""
         mock_hex_client.runs.cancel.return_value = None
 
-        result = runner.invoke(app, ["runs", "cancel", "project-123", "run-456", "--yes"])
+        result = runner.invoke(
+            app, ["runs", "cancel", "project-123", "run-456", "--yes"]
+        )
 
         assert result.exit_code == 0
         assert "Are you sure" not in result.output  # No confirmation prompt
@@ -232,7 +272,9 @@ class TestRunsCancel:
             "Run not found", status_code=404
         )
 
-        result = runner.invoke(app, ["runs", "cancel", "project-123", "invalid-run", "--yes"])
+        result = runner.invoke(
+            app, ["runs", "cancel", "project-123", "invalid-run", "--yes"]
+        )
 
         assert result.exit_code == 1
         assert "Run not found" in result.output
@@ -243,7 +285,9 @@ class TestRunsCancel:
             "Cannot cancel completed run", status_code=400
         )
 
-        result = runner.invoke(app, ["runs", "cancel", "project-123", "completed-run", "--yes"])
+        result = runner.invoke(
+            app, ["runs", "cancel", "project-123", "completed-run", "--yes"]
+        )
 
         assert result.exit_code == 1
         assert "Cannot cancel completed run" in result.output
@@ -252,7 +296,9 @@ class TestRunsCancel:
         """Test handling of general errors during cancel."""
         mock_hex_client.runs.cancel.side_effect = Exception("Network error")
 
-        result = runner.invoke(app, ["runs", "cancel", "project-123", "run-456", "--yes"])
+        result = runner.invoke(
+            app, ["runs", "cancel", "project-123", "run-456", "--yes"]
+        )
 
         assert result.exit_code == 1
         assert "Network error" in result.output

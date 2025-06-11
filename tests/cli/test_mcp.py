@@ -27,19 +27,24 @@ class TestMCPServe:
     def test_serve_sse_transport(self, runner, mock_env_api_key):  # noqa: ARG002
         """Test MCP serve with SSE transport."""
         with patch("hex_toolkit.mcp.mcp_server.run") as mock_run:
-            result = runner.invoke(app, [
-                "mcp", "serve",
-                "--transport", "sse",
-                "--port", "9090",
-                "--host", "0.0.0.0"
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "mcp",
+                    "serve",
+                    "--transport",
+                    "sse",
+                    "--port",
+                    "9090",
+                    "--host",
+                    "0.0.0.0",
+                ],
+            )
 
             assert result.exit_code == 0
             assert "Starting Hex Toolkit MCP server (SSE transport)" in result.output
             mock_run.assert_called_once_with(
-                transport="sse",
-                sse_host="0.0.0.0",
-                sse_port=9090
+                transport="sse", sse_host="0.0.0.0", sse_port=9090
             )
 
     def test_serve_missing_api_key(self, runner, mock_env_no_api_key):  # noqa: ARG002
@@ -100,9 +105,7 @@ class TestMCPInstall:
 
             assert result.exit_code == 0
             mock_installer.install.assert_called_once_with(
-                target="auto",
-                scope="user",
-                force=False
+                target="auto", scope="user", force=False
             )
 
     def test_install_specific_target(self, runner, mock_env_api_key):  # noqa: ARG002
@@ -111,18 +114,22 @@ class TestMCPInstall:
             mock_installer = Mock()
             mock_installer_class.return_value = mock_installer
 
-            result = runner.invoke(app, [
-                "mcp", "install",
-                "--target", "claude-desktop",
-                "--scope", "project",
-                "--force"
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "mcp",
+                    "install",
+                    "--target",
+                    "claude-desktop",
+                    "--scope",
+                    "project",
+                    "--force",
+                ],
+            )
 
             assert result.exit_code == 0
             mock_installer.install.assert_called_once_with(
-                target="claude-desktop",
-                scope="project",
-                force=True
+                target="claude-desktop", scope="project", force=True
             )
 
     def test_install_all_targets(self, runner, mock_env_api_key):  # noqa: ARG002
@@ -135,9 +142,7 @@ class TestMCPInstall:
 
             assert result.exit_code == 0
             mock_installer.install.assert_called_once_with(
-                target="all",
-                scope="user",
-                force=False
+                target="all", scope="user", force=False
             )
 
     def test_install_error(self, runner, mock_env_api_key):  # noqa: ARG002
@@ -166,8 +171,7 @@ class TestMCPUninstall:
 
             assert result.exit_code == 0
             mock_installer.uninstall.assert_called_once_with(
-                target="auto",
-                scope="user"
+                target="auto", scope="user"
             )
 
     def test_uninstall_specific_target(self, runner, mock_env_api_key):  # noqa: ARG002
@@ -176,16 +180,13 @@ class TestMCPUninstall:
             mock_installer = Mock()
             mock_installer_class.return_value = mock_installer
 
-            result = runner.invoke(app, [
-                "mcp", "uninstall",
-                "--target", "claude-code",
-                "--scope", "local"
-            ])
+            result = runner.invoke(
+                app, ["mcp", "uninstall", "--target", "claude-code", "--scope", "local"]
+            )
 
             assert result.exit_code == 0
             mock_installer.uninstall.assert_called_once_with(
-                target="claude-code",
-                scope="local"
+                target="claude-code", scope="local"
             )
 
     def test_uninstall_error(self, runner, mock_env_api_key):  # noqa: ARG002

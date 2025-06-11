@@ -461,9 +461,7 @@ def _display_reviews(project: Project) -> None:
 def _display_schedule_details(schedule: Schedule) -> None:
     """Display details for a specific schedule."""
     if schedule.cadence == "HOURLY" and schedule.hourly:
-        console.print(
-            f"    Runs at: {schedule.hourly.minute} minutes past each hour"
-        )
+        console.print(f"    Runs at: {schedule.hourly.minute} minutes past each hour")
         console.print(f"    Timezone: {schedule.hourly.timezone}")
     elif schedule.cadence == "DAILY" and schedule.daily:
         console.print(
@@ -472,7 +470,7 @@ def _display_schedule_details(schedule: Schedule) -> None:
         console.print(f"    Timezone: {schedule.daily.timezone}")
     elif schedule.cadence == "WEEKLY" and schedule.weekly:
         # Handle both enum and string values
-        if hasattr(schedule.weekly.day_of_week, 'value'):
+        if hasattr(schedule.weekly.day_of_week, "value"):
             day = schedule.weekly.day_of_week.value
         else:
             day = schedule.weekly.day_of_week
@@ -503,7 +501,7 @@ def _display_schedules(project: Project) -> None:
             continue
 
         # Handle both enum and string values
-        if hasattr(schedule.cadence, 'value'):
+        if hasattr(schedule.cadence, "value"):
             cadence = schedule.cadence.value
         else:
             cadence = schedule.cadence if schedule.cadence else "Unknown"
@@ -521,7 +519,7 @@ def _display_sharing_access_level(
         return
 
     # Handle both enum and string values (for testing compatibility)
-    if hasattr(sharing_obj.access, 'value'):
+    if hasattr(sharing_obj.access, "value"):
         access = sharing_obj.access.value
     else:
         access = sharing_obj.access if sharing_obj.access else "NONE"
@@ -538,7 +536,7 @@ def _display_sharing_users(users: list[UserAccess]) -> None:
     for user in users[:5]:  # Show first 5
         email = user.user.email if user.user else "Unknown"
         # Handle both enum and string values
-        if hasattr(user.access, 'value'):
+        if hasattr(user.access, "value"):
             access = user.access.value
         else:
             access = user.access if user.access else "NONE"
@@ -556,7 +554,7 @@ def _display_sharing_groups(groups: list[GroupAccess]) -> None:
     for group in groups:
         name = group.group.get("name", "Unknown") if group.group else "Unknown"
         # Handle both enum and string values
-        if hasattr(group.access, 'value'):
+        if hasattr(group.access, "value"):
             access = group.access.value
         else:
             access = group.access if group.access else "NONE"
@@ -576,7 +574,7 @@ def _display_sharing_collections(collections: list[CollectionAccess]) -> None:
             else "Unknown"
         )
         # Handle both enum and string values
-        if hasattr(collection.access, 'value'):
+        if hasattr(collection.access, "value"):
             access = collection.access.value
         else:
             access = collection.access if collection.access else "NONE"

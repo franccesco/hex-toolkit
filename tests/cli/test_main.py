@@ -100,7 +100,5 @@ class TestEnvironmentHandling:
 
             # Verify custom base URL was passed
             mock_client_class.assert_called_with(
-                api_key="test-api-key",
-                base_url="https://custom.hex.tech/api"
+                api_key="test-api-key", base_url="https://custom.hex.tech/api"
             )
-

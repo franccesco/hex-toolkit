@@ -156,3 +156,4 @@ The OpenAPI validation ensures your SDK stays in sync with the API with minimal 
 ## Memories
 
 - Run ruff and pyright after refactors or additions to make sure our code is of high-quality
+- We're running a packages with different dependencies for CLI and MCP. Run `uv sync --all-extras` to make sure all dependencies are installed.
