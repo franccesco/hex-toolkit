@@ -36,23 +36,23 @@ client = HexClient(api_key="your-api-key")
 
 # List all projects
 projects = client.projects.list()
-for project in projects["values"]:
-    print(f"{project['title']} - {project['id']}")
+for project in projects.values:
+    print(f"{project.title} - {project.id}")
 
 # Get a specific project
 project = client.projects.get("project-id")
-print(project["title"])
+print(project.title)
 
 # Run a project
 run = client.projects.run(
     project_id="project-id",
     input_params={"param1": "value1"}
 )
-print(f"Run started: {run['runId']}")
+print(f"Run started: {run.run_id}")
 
 # Check run status
-status = client.runs.get_status(project_id="project-id", run_id=run["runId"])
-print(f"Status: {status['status']}")
+status = client.runs.get_status(project_id="project-id", run_id=run.run_id)
+print(f"Status: {status.status}")
 ```
 
 ## Configuration
@@ -86,13 +86,13 @@ projects = client.projects.list(
     creator_email="user@example.com"
 )
 
-# Access project data - all fields use camelCase like the API
-for project in projects["values"]:
-    print(f"ID: {project['id']}")
-    print(f"Title: {project['title']}")
-    print(f"Type: {project['type']}")  # "PROJECT" or "COMPONENT"
-    print(f"Created: {project['createdAt']}")
-    print(f"Last edited: {project['lastEditedAt']}")
+# Access project data - fields are converted to snake_case
+for project in projects.values:
+    print(f"ID: {project.id}")
+    print(f"Title: {project.title}")
+    print(f"Type: {project.type}")  # ProjectType.PROJECT or ProjectType.COMPONENT
+    print(f"Created: {project.created_at}")
+    print(f"Last edited: {project.last_edited_at}")
 ```
 
 ### Pagination
@@ -104,11 +104,10 @@ all_projects = []
 
 while True:
     response = client.projects.list(limit=100, after=after_cursor)
-    all_projects.extend(response["values"])
+    all_projects.extend(response.values)
 
     # Check if there are more pages
-    pagination = response.get("pagination", {})
-    after_cursor = pagination.get("after")
+    after_cursor = response.pagination.after if response.pagination else None
     if not after_cursor:
         break
 
@@ -149,17 +148,17 @@ run = client.projects.run(
 import time
 
 # Wait for completion
-run_id = run["runId"]
-project_id = run["projectId"]
+run_id = run.run_id
+project_id = run.project_id
 
 while True:
     status = client.runs.get_status(project_id, run_id)
-    print(f"Status: {status['status']}")
+    print(f"Status: {status.status}")
 
-    if status["status"] in ["COMPLETED", "ERRORED", "KILLED"]:
-        print(f"Run finished with status: {status['status']}")
-        if status.get("elapsedTime"):
-            print(f"Elapsed time: {status['elapsedTime']}ms")
+    if status.status in ["COMPLETED", "ERRORED", "KILLED"]:
+        print(f"Run finished with status: {status.status}")
+        if status.elapsed_time:
+            print(f"Elapsed time: {status.elapsed_time}ms")
         break
 
     time.sleep(5)
@@ -194,7 +193,7 @@ except HexAPIError as e:
 ```python
 # Create a basic embedded URL
 embed = client.embedding.create_presigned_url("project-id")
-print(f"Embed URL: {embed['url']}")
+print(f"Embed URL: {embed.url}")
 
 # Create with options
 embed = client.embedding.create_presigned_url(
@@ -246,34 +245,53 @@ See the [MCP documentation](MCP_README.md) for detailed setup and usage instruct
 
 ### Semantic Models
 
-- `client.semantic_models.ingest(semantic_model_id, **options)` - Ingest semantic model
+- `client.semantic_models.ingest(semantic_model_id, **options)` - Ingest semantic model (Note: File upload support is not yet implemented)
 
 ## Response Format
 
-All methods return plain Python dictionaries matching the Hex API response format:
+All methods return strongly-typed Pydantic models with convenient dot notation access. The SDK automatically converts the API's camelCase fields to Pythonic snake_case:
 
 ```python
-# Project dict structure
-project = {
-    "id": "12345678-1234-1234-1234-123456789012",
-    "title": "Sales Dashboard",
-    "type": "PROJECT",
-    "createdAt": "2024-01-01T00:00:00Z",
-    "lastEditedAt": "2024-01-15T12:30:00Z",
-    "creator": {"email": "user@example.com"},
-    "owner": {"email": "user@example.com"},
-    # ... other fields
-}
+# Project object - access with dot notation
+project = client.projects.get("project-id")
+print(project.id)                # "12345678-1234-1234-1234-123456789012"
+print(project.title)             # "Sales Dashboard"
+print(project.type)              # ProjectType.PROJECT (enum)
+print(project.created_at)        # datetime object (converted from "createdAt")
+print(project.last_edited_at)    # datetime object (converted from "lastEditedAt")
+print(project.creator.email)     # "user@example.com"
+print(project.owner.email)       # "user@example.com"
 
-# Run response structure
-run = {
-    "projectId": "12345678-1234-1234-1234-123456789012",
-    "runId": "87654321-4321-4321-4321-210987654321",
-    "runUrl": "https://app.hex.tech/app/runs/...",
-    "runStatusUrl": "https://app.hex.tech/api/v1/projects/.../runs/...",
-    # ... other fields
-}
+# Run response - also uses dot notation
+run = client.projects.run("project-id")
+print(run.project_id)            # "12345678-1234-1234-1234-123456789012"
+print(run.run_id)                # "87654321-4321-4321-4321-210987654321"
+print(run.run_url)               # "https://app.hex.tech/app/runs/..."
+print(run.run_status_url)        # "https://app.hex.tech/api/v1/projects/.../runs/..."
+
+# Paginated responses have a 'values' attribute
+projects = client.projects.list()
+for project in projects.values:
+    print(f"{project.title}: {project.status}")
 ```
+
+### Field Name Conversion
+
+The API returns camelCase field names, but the SDK automatically converts them to snake_case for a more Pythonic experience:
+
+- `createdAt` → `created_at`
+- `lastEditedAt` → `last_edited_at`
+- `runId` → `run_id`
+- `projectId` → `project_id`
+- `inputParams` → `input_params`
+
+### Type Safety
+
+All responses are validated Pydantic models, providing:
+- Auto-completion in IDEs
+- Type checking with mypy/pyright
+- Automatic validation of API responses
+- Clear error messages for invalid data
 
 ## Development
 

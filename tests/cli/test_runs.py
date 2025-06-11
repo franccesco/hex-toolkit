@@ -10,9 +10,7 @@ from hex_toolkit.models.runs import RunStatus
 class TestRunsStatus:
     """Test 'hex runs status' command."""
 
-    def test_status_basic(
-        self, runner, mock_hex_client, sample_run_status
-    ):
+    def test_status_basic(self, runner, mock_hex_client, sample_run_status):
         """Test basic run status retrieval."""
         mock_hex_client.runs.get_status.return_value = sample_run_status
 
@@ -91,9 +89,7 @@ class TestRunsList:
             status_filter=None,
         )
 
-    def test_list_with_options(
-        self, runner, mock_hex_client, sample_runs
-    ):
+    def test_list_with_options(self, runner, mock_hex_client, sample_runs):
         """Test run listing with options."""
         mock_hex_client.runs.list.return_value = Mock(runs=sample_runs[:2])
 
@@ -151,9 +147,7 @@ class TestRunsList:
             == RunStatus.COMPLETED
         )
 
-    def test_list_invalid_status_filter(
-        self, runner
-    ):
+    def test_list_invalid_status_filter(self, runner):
         """Test error with invalid status filter."""
         result = runner.invoke(
             app,
@@ -212,9 +206,7 @@ class TestRunsList:
         assert "5m" in result.output  # Medium run
         assert "2h 30m" in result.output  # Long run
 
-    def test_list_shows_count(
-        self, runner, mock_hex_client, sample_runs
-    ):
+    def test_list_shows_count(self, runner, mock_hex_client, sample_runs):
         """Test run count is displayed."""
         mock_hex_client.runs.list.return_value = Mock(runs=sample_runs)
 

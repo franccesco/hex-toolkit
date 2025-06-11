@@ -12,9 +12,7 @@ from hex_toolkit.models.projects import SortBy, SortDirection
 class TestProjectsList:
     """Test 'hex projects list' command."""
 
-    def test_list_basic(
-        self, runner, mock_hex_client, mock_list_response
-    ):
+    def test_list_basic(self, runner, mock_hex_client, mock_list_response):
         """Test basic project listing."""
         mock_hex_client.projects.list.return_value = mock_list_response
 
@@ -37,9 +35,7 @@ class TestProjectsList:
             sort_direction=None,
         )
 
-    def test_list_with_limit(
-        self, runner, mock_hex_client, mock_list_response
-    ):
+    def test_list_with_limit(self, runner, mock_hex_client, mock_list_response):
         """Test listing with custom limit."""
         mock_hex_client.projects.list.return_value = mock_list_response
 
@@ -49,9 +45,7 @@ class TestProjectsList:
         mock_hex_client.projects.list.assert_called_once()
         assert mock_hex_client.projects.list.call_args[1]["limit"] == 50
 
-    def test_list_with_filters(
-        self, runner, mock_hex_client, mock_list_response
-    ):
+    def test_list_with_filters(self, runner, mock_hex_client, mock_list_response):
         """Test listing with various filters."""
         mock_hex_client.projects.list.return_value = mock_list_response
 
@@ -124,9 +118,7 @@ class TestProjectsList:
         assert result.exit_code == 1
         assert "Invalid sort field 'invalid_field'" in result.output
 
-    def test_list_custom_columns(
-        self, runner, mock_hex_client, mock_list_response
-    ):
+    def test_list_custom_columns(self, runner, mock_hex_client, mock_list_response):
         """Test listing with custom columns."""
         mock_hex_client.projects.list.return_value = mock_list_response
 
@@ -178,9 +170,7 @@ class TestProjectsList:
         assert result.exit_code == 1
         assert "API Error" in result.output
 
-    def test_list_with_search(
-        self, runner, mock_hex_client, sample_projects
-    ):
+    def test_list_with_search(self, runner, mock_hex_client, sample_projects):
         """Test project search functionality."""
         # Mock paginated responses
         mock_hex_client.projects.list.side_effect = [
@@ -216,9 +206,7 @@ class TestProjectsGet:
             "project-123", include_sharing=False
         )
 
-    def test_get_with_sharing(
-        self, runner, mock_hex_client, sample_project
-    ):
+    def test_get_with_sharing(self, runner, mock_hex_client, sample_project):
         """Test project retrieval with sharing info."""
         mock_hex_client.projects.get.return_value = sample_project
 
@@ -307,9 +295,7 @@ class TestProjectsGet:
 class TestProjectsRun:
     """Test 'hex projects run' command."""
 
-    def test_run_basic(
-        self, runner, mock_hex_client, sample_run_info
-    ):
+    def test_run_basic(self, runner, mock_hex_client, sample_run_info):
         """Test basic project run."""
         mock_hex_client.projects.run.return_value = sample_run_info
 
@@ -327,9 +313,7 @@ class TestProjectsRun:
             use_cached_sql_results=True,
         )
 
-    def test_run_with_options(
-        self, runner, mock_hex_client, sample_run_info
-    ):
+    def test_run_with_options(self, runner, mock_hex_client, sample_run_info):
         """Test project run with various options."""
         mock_hex_client.projects.run.return_value = sample_run_info
 
@@ -354,9 +338,7 @@ class TestProjectsRun:
             use_cached_sql_results=False,
         )
 
-    def test_run_with_input_params(
-        self, runner, mock_hex_client, sample_run_info
-    ):
+    def test_run_with_input_params(self, runner, mock_hex_client, sample_run_info):
         """Test project run with input parameters."""
         mock_hex_client.projects.run.return_value = sample_run_info
         params = {"key": "value", "number": 42}
@@ -392,9 +374,7 @@ class TestProjectsRun:
         assert result.exit_code == 1
         assert "Invalid JSON for input parameters" in result.output
 
-    def test_run_with_wait(
-        self, runner, mock_hex_client, sample_run_info
-    ):
+    def test_run_with_wait(self, runner, mock_hex_client, sample_run_info):
         """Test project run with --wait flag."""
         mock_hex_client.projects.run.return_value = sample_run_info
 
