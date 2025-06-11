@@ -2,6 +2,7 @@
 
 import os
 import time
+from collections.abc import Callable
 from datetime import datetime
 
 import typer
@@ -12,7 +13,17 @@ from rich.table import Table
 
 from hex_toolkit import HexClient, __version__
 from hex_toolkit.exceptions import HexAPIError
-from hex_toolkit.models.projects import SortBy, SortDirection
+from hex_toolkit.models.projects import (
+    CollectionAccess,
+    GroupAccess,
+    Project,
+    PublicWebAccess,
+    SortBy,
+    SortDirection,
+    SupportAccess,
+    UserAccess,
+    WorkspaceAccess,
+)
 from hex_toolkit.models.runs import RunStatus
 
 app = typer.Typer(
@@ -40,6 +51,183 @@ def get_client():
 
     base_url = os.getenv("HEX_API_BASE_URL")
     return HexClient(api_key=api_key, base_url=base_url)
+
+
+def _parse_sort_option(sort: str | None) -> tuple[SortBy | None, SortDirection | None]:
+    """Parse sort option and return sort_by and sort_direction."""
+    if not sort:
+        return None, None
+
+    # Check if it starts with '-' for descending order
+    if sort.startswith("-"):
+        sort_direction = "DESC"
+        sort_field = sort[1:]  # Remove the '-' prefix
+    else:
+        sort_direction = "ASC"
+        sort_field = sort
+
+    # Map CLI field names to API enums
+    sort_field_map = {
+        "created_at": SortBy.CREATED_AT,
+        "last_edited_at": SortBy.LAST_EDITED_AT,
+        "last_published_at": SortBy.LAST_PUBLISHED_AT,
+    }
+
+    if sort_field not in sort_field_map:
+        console.print(
+            f"[red]Error: Invalid sort field '{sort_field}'. "
+            f"Valid options are: created_at, last_edited_at, last_published_at[/red]"
+        )
+        raise typer.Exit(1)
+
+    sort_by = sort_field_map[sort_field]
+    sort_direction = (
+        SortDirection.DESC if sort_direction == "DESC" else SortDirection.ASC
+    )
+
+    return sort_by, sort_direction
+
+
+def _search_projects(
+    client: HexClient,
+    search: str,
+    include_archived: bool,
+    include_trashed: bool,
+    creator_email: str | None,
+    owner_email: str | None,
+    sort_by: SortBy | None,
+    sort_direction: SortDirection | None,
+) -> list[Project]:
+    """Search for projects by name or description."""
+    projects: list[Project] = []
+    after_cursor = None
+    search_lower = search.lower().strip()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
+    ) as progress:
+        task = progress.add_task(description="Searching projects...", total=None)
+
+        # Fetch all pages
+        while True:
+            response = client.projects.list(
+                limit=100,  # Max limit for faster fetching
+                include_archived=include_archived,
+                include_trashed=include_trashed,
+                creator_email=creator_email,
+                owner_email=owner_email,
+                sort_by=sort_by,
+                sort_direction=sort_direction,
+                after=after_cursor,
+            )
+
+            page_projects = response.values
+
+            # Filter projects that match the search string
+            for project in page_projects:
+                # Get project name
+                name = project.title.strip() if project.title else ""
+                # Get description
+                description = project.description or ""
+
+                # Check if search string is in name or description (case-insensitive)
+                if (search_lower in name.lower()) or (
+                    search_lower in description.lower()
+                ):
+                    projects.append(project)
+
+            # Update progress
+            progress.update(
+                task,
+                description=f"Searching projects... (found {len(projects)} matches)",
+            )
+
+            # Check if there are more pages
+            pagination = response.pagination
+            after_cursor = pagination.after if pagination else None
+
+            if not after_cursor or not page_projects:
+                break
+
+    return projects
+
+
+def _get_column_value(project: Project, col_key: str) -> str:
+    """Extract column value from project data."""
+    # Use a mapping to reduce complexity
+    simple_getters: dict[str, Callable[[Project], str]] = {
+        "id": lambda p: str(p.id),
+        "name": lambda p: p.title.strip() if p.title else "",
+        "status": lambda p: p.status.name if p.status else "",
+        "owner": lambda p: p.owner.email if p.owner else "",
+        "created_at": lambda p: p.created_at.strftime("%Y-%m-%d")
+        if p.created_at
+        else "",
+        "creator": lambda p: p.creator.email if p.creator else "",
+    }
+
+    if col_key in simple_getters:
+        return simple_getters[col_key](project)
+
+    if col_key == "last_viewed_at":
+        if project.analytics and project.analytics.last_viewed_at:
+            return project.analytics.last_viewed_at.strftime("%Y-%m-%d")
+        return ""
+
+    if col_key == "app_views":
+        if project.analytics and project.analytics.app_views:
+            return str(project.analytics.app_views.all_time)
+        return ""
+
+    return ""
+
+
+def _build_project_table(
+    projects: list[Project],
+    columns: str | None,
+    search: str | None,
+) -> Table:
+    """Build a Rich table for displaying projects."""
+    # Parse columns option
+    if columns:
+        selected_columns = [col.strip().lower() for col in columns.split(",")]
+    else:
+        selected_columns = ["id", "name", "status", "owner", "created_at"]
+
+    # Define available columns
+    column_definitions = {
+        "id": ("ID", "cyan"),
+        "name": ("Name", "green"),
+        "status": ("Status", "yellow"),
+        "owner": ("Owner", None),
+        "created_at": ("Created At", None),
+        "creator": ("Creator", None),
+        "last_viewed_at": ("Last Viewed At", None),
+        "app_views": ("App Views (All Time)", None),
+    }
+
+    # Create a table for display
+    if search:
+        table = Table(title=f"Hex Projects (search: '{search}')")
+    else:
+        table = Table(title="Hex Projects")
+
+    # Add selected columns to table
+    for col_key in selected_columns:
+        if col_key in column_definitions:
+            col_name, col_style = column_definitions[col_key]
+            table.add_column(col_name, style=col_style)
+
+    for project in projects:
+        # Build row data based on selected columns
+        row_data = []
+        for col_key in selected_columns:
+            row_data.append(_get_column_value(project, col_key))
+        table.add_row(*row_data)
+
+    return table
 
 
 @projects_app.command("list")
@@ -71,95 +259,21 @@ def list_projects(
         client = get_client()
 
         # Parse sort option
-        sort_by = None
-        sort_direction = None
-        if sort:
-            # Check if it starts with '-' for descending order
-            if sort.startswith("-"):
-                sort_direction = "DESC"
-                sort_field = sort[1:]  # Remove the '-' prefix
-            else:
-                sort_direction = "ASC"
-                sort_field = sort
-
-            # Map CLI field names to API enums
-            sort_field_map = {
-                "created_at": SortBy.CREATED_AT,
-                "last_edited_at": SortBy.LAST_EDITED_AT,
-                "last_published_at": SortBy.LAST_PUBLISHED_AT,
-            }
-
-            if sort_field in sort_field_map:
-                sort_by = sort_field_map[sort_field]
-            else:
-                console.print(
-                    f"[red]Error: Invalid sort field '{sort_field}'. "
-                    f"Valid options are: created_at, last_edited_at, last_published_at[/red]"
-                )
-                raise typer.Exit(1)
-
-            # Convert string to enum
-            sort_direction = (
-                SortDirection.DESC if sort_direction == "DESC" else SortDirection.ASC
-            )
+        sort_by, sort_direction = _parse_sort_option(sort)
 
         # If searching, we need to fetch all projects
+        response = None
         if search:
-            projects = []
-            after_cursor = None
-            search_lower = search.lower().strip()
-
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                transient=True,
-            ) as progress:
-                task = progress.add_task(
-                    description="Searching projects...", total=None
-                )
-
-                # Fetch all pages
-                while True:
-                    response = client.projects.list(
-                        limit=100,  # Max limit for faster fetching
-                        include_archived=include_archived,
-                        include_trashed=include_trashed,
-                        creator_email=creator_email,
-                        owner_email=owner_email,
-                        sort_by=sort_by,
-                        sort_direction=sort_direction,
-                        after=after_cursor,
-                    )
-
-                    page_projects = response.values
-
-                    # Filter projects that match the search string
-                    for project in page_projects:
-                        # Get project name
-                        name = project.title.strip() if project.title else ""
-
-                        # Get description
-                        description = project.description or ""
-
-                        # Check if search string is in name or description (case-insensitive)
-                        if (search_lower in name.lower()) or (
-                            search_lower in description.lower()
-                        ):
-                            projects.append(project)
-
-                    # Update progress
-                    progress.update(
-                        task,
-                        description=f"Searching projects... (found {len(projects)} matches)",
-                    )
-
-                    # Check if there are more pages
-                    pagination = response.pagination
-                    after_cursor = pagination.after if pagination else None
-
-                    if not after_cursor or not page_projects:
-                        break
-
+            projects = _search_projects(
+                client,
+                search,
+                include_archived,
+                include_trashed,
+                creator_email,
+                owner_email,
+                sort_by,
+                sort_direction,
+            )
         else:
             # Normal listing without search
             with Progress(
@@ -184,89 +298,8 @@ def list_projects(
             console.print("[yellow]No projects found[/yellow]")
             return
 
-        # Parse columns option
-        if columns:
-            selected_columns = [col.strip().lower() for col in columns.split(",")]
-        else:
-            selected_columns = ["id", "name", "status", "owner", "created_at"]
-
-        # Define available columns
-        column_definitions = {
-            "id": ("ID", "cyan"),
-            "name": ("Name", "green"),
-            "status": ("Status", "yellow"),
-            "owner": ("Owner", None),
-            "created_at": ("Created At", None),
-            "creator": ("Creator", None),
-            "last_viewed_at": ("Last Viewed At", None),
-            "app_views": ("App Views (All Time)", None),
-        }
-
-        # Create a table for display
-        if search:
-            table = Table(title=f"Hex Projects (search: '{search}')")
-        else:
-            table = Table(title="Hex Projects")
-
-        # Add selected columns to table
-        for col_key in selected_columns:
-            if col_key in column_definitions:
-                col_name, col_style = column_definitions[col_key]
-                table.add_column(col_name, style=col_style)
-
-        for project in projects:
-            # Build row data based on selected columns
-            row_data = []
-
-            for col_key in selected_columns:
-                if col_key == "id":
-                    row_data.append(str(project.id))
-
-                elif col_key == "name":
-                    # Get project title
-                    name = project.title.strip() if project.title else ""
-                    row_data.append(name)
-
-                elif col_key == "status":
-                    # Handle status
-                    status = project.status.name if project.status else ""
-                    row_data.append(status)
-
-                elif col_key == "owner":
-                    # Get owner email
-                    owner = project.owner.email if project.owner else ""
-                    row_data.append(owner)
-
-                elif col_key == "created_at":
-                    row_data.append(
-                        project.created_at.strftime("%Y-%m-%d")
-                        if project.created_at
-                        else ""
-                    )
-
-                elif col_key == "creator":
-                    # Get creator email
-                    creator = project.creator.email if project.creator else ""
-                    row_data.append(creator)
-
-                elif col_key == "last_viewed_at":
-                    # Get last viewed timestamp from analytics
-                    last_viewed = ""
-                    if project.analytics and project.analytics.last_viewed_at:
-                        last_viewed = project.analytics.last_viewed_at.strftime(
-                            "%Y-%m-%d"
-                        )
-                    row_data.append(last_viewed)
-
-                elif col_key == "app_views":
-                    # Get app views all time from analytics
-                    app_views = ""
-                    if project.analytics and project.analytics.app_views:
-                        app_views = str(project.analytics.app_views.all_time)
-                    row_data.append(app_views)
-
-            table.add_row(*row_data)
-
+        # Build and display the table
+        table = _build_project_table(projects, columns, search)
         console.print(table)
 
         # Show pagination info if available
@@ -274,7 +307,7 @@ def list_projects(
             console.print(
                 f"\n[dim]Found {len(projects)} project(s) matching '{search}'[/dim]"
             )
-        else:
+        elif response:
             pagination = response.pagination
             if pagination and pagination.after:
                 console.print(
@@ -289,6 +322,254 @@ def list_projects(
         raise typer.Exit(1) from e
 
 
+def _display_basic_info(project: Project) -> None:
+    """Display basic project information."""
+    console.print("\n[bold]📋 Basic Information[/bold]")
+    info_table = Table(show_header=False, box=None, padding=(0, 2))
+    info_table.add_column(style="dim")
+    info_table.add_column()
+
+    info_table.add_row("ID", f"[cyan]{project.id}[/cyan]")
+    info_table.add_row("Type", project.type.value if project.type else "PROJECT")
+
+    # Description
+    if project.description:
+        # Clean up description
+        description = " ".join(project.description.split())
+        if len(description) > 100:
+            description = description[:97] + "..."
+        info_table.add_row("Description", description)
+
+    # Status
+    status_name = project.status.name if project.status else "Unknown"
+    status_color = "green" if status_name == "Published" else "yellow"
+    info_table.add_row("Status", f"[{status_color}]{status_name}[/{status_color}]")
+
+    console.print(info_table)
+
+
+def _display_people_info(project: Project) -> None:
+    """Display people information."""
+    console.print("\n[bold]👥 People[/bold]")
+    people_table = Table(show_header=False, box=None, padding=(0, 2))
+    people_table.add_column(style="dim")
+    people_table.add_column()
+
+    # Creator
+    if project.creator:
+        people_table.add_row("Creator", project.creator.email)
+
+    # Owner
+    if project.owner:
+        people_table.add_row("Owner", project.owner.email)
+
+    console.print(people_table)
+
+
+def _display_timestamps(project: Project) -> None:
+    """Display timestamp information."""
+    console.print("\n[bold]🕐 Timestamps[/bold]")
+    time_table = Table(show_header=False, box=None, padding=(0, 2))
+    time_table.add_column(style="dim")
+    time_table.add_column()
+
+    # Format timestamps
+    if project.created_at:
+        time_table.add_row("Created", _format_timestamp(project.created_at))
+
+    if project.last_edited_at:
+        time_table.add_row("Last Edited", _format_timestamp(project.last_edited_at))
+
+    if project.last_published_at:
+        time_table.add_row(
+            "Last Published", _format_timestamp(project.last_published_at)
+        )
+
+    if project.archived_at:
+        time_table.add_row(
+            "Archived", f"[red]{_format_timestamp(project.archived_at)}[/red]"
+        )
+
+    if project.trashed_at:
+        time_table.add_row(
+            "Trashed", f"[red]{_format_timestamp(project.trashed_at)}[/red]"
+        )
+
+    console.print(time_table)
+
+
+def _display_analytics(project: Project) -> None:
+    """Display analytics information."""
+    if not project.analytics:
+        return
+
+    console.print("\n[bold]📊 Analytics[/bold]")
+    analytics_table = Table(show_header=False, box=None, padding=(0, 2))
+    analytics_table.add_column(style="dim")
+    analytics_table.add_column()
+
+    # Last viewed
+    if project.analytics.last_viewed_at:
+        analytics_table.add_row(
+            "Last Viewed", _format_timestamp(project.analytics.last_viewed_at)
+        )
+
+    # Published results updated
+    if project.analytics.published_results_updated_at:
+        analytics_table.add_row(
+            "Results Updated",
+            _format_timestamp(project.analytics.published_results_updated_at),
+        )
+
+    # App views
+    if project.analytics.app_views:
+        views_str = []
+        views_str.append(f"All time: {project.analytics.app_views.all_time:,}")
+        views_str.append(f"30d: {project.analytics.app_views.last_thirty_days:,}")
+        views_str.append(f"7d: {project.analytics.app_views.last_seven_days:,}")
+
+        if views_str:
+            analytics_table.add_row("App Views", " | ".join(views_str))
+
+    if analytics_table.row_count > 0:
+        console.print(analytics_table)
+
+
+def _display_categories(project: Project) -> None:
+    """Display project categories."""
+    if not project.categories:
+        return
+
+    console.print("\n[bold]🏷️  Categories[/bold]")
+    for cat in project.categories:
+        if cat.description:
+            console.print(f"  • {cat.name}: [dim]{cat.description}[/dim]")
+        else:
+            console.print(f"  • {cat.name}")
+
+
+def _display_reviews(project: Project) -> None:
+    """Display review information."""
+    if not project.reviews:
+        return
+
+    console.print("\n[bold]✅ Reviews[/bold]")
+    console.print(f"  Reviews Required: {'Yes' if project.reviews.required else 'No'}")
+
+
+def _display_schedules(project: Project) -> None:
+    """Display schedule information."""
+    if not project.schedules:
+        return
+
+    console.print("\n[bold]📅 Schedules[/bold]")
+    for i, schedule in enumerate(project.schedules, 1):
+        if not schedule.enabled:
+            continue
+
+        cadence = schedule.cadence.value if schedule.cadence else "Unknown"
+        console.print(f"\n  Schedule {i}: [yellow]{cadence}[/yellow]")
+
+        # Show schedule details based on cadence
+        if schedule.cadence == "HOURLY" and schedule.hourly:
+            console.print(
+                f"    Runs at: {schedule.hourly.minute} minutes past each hour"
+            )
+            console.print(f"    Timezone: {schedule.hourly.timezone}")
+        elif schedule.cadence == "DAILY" and schedule.daily:
+            console.print(
+                f"    Runs at: {schedule.daily.hour:02d}:{schedule.daily.minute:02d}"
+            )
+            console.print(f"    Timezone: {schedule.daily.timezone}")
+        elif schedule.cadence == "WEEKLY" and schedule.weekly:
+            console.print(f"    Day: {schedule.weekly.day_of_week.value}")
+            console.print(
+                f"    Time: {schedule.weekly.hour:02d}:{schedule.weekly.minute:02d}"
+            )
+            console.print(f"    Timezone: {schedule.weekly.timezone}")
+        elif schedule.cadence == "MONTHLY" and schedule.monthly:
+            console.print(f"    Day: {schedule.monthly.day}")
+            console.print(
+                f"    Time: {schedule.monthly.hour:02d}:{schedule.monthly.minute:02d}"
+            )
+            console.print(f"    Timezone: {schedule.monthly.timezone}")
+        elif schedule.cadence == "CUSTOM" and schedule.custom:
+            console.print(f"    Cron: {schedule.custom.cron}")
+            console.print(f"    Timezone: {schedule.custom.timezone}")
+
+
+def _display_sharing_access_level(
+    sharing_obj: WorkspaceAccess | PublicWebAccess | SupportAccess | None, title: str
+) -> None:
+    """Display access level for a sharing object."""
+    if not sharing_obj:
+        return
+
+    access = sharing_obj.access.value if sharing_obj.access else "NONE"
+    console.print(f"\n  [bold]{title}[/bold]")
+    console.print(f"    Access Level: {_format_access_level(access)}")
+
+
+def _display_sharing_users(users: list[UserAccess]) -> None:
+    """Display sharing users."""
+    if not users:
+        return
+
+    console.print(f"\n  [bold]Users ({len(users)})[/bold]")
+    for user in users[:5]:  # Show first 5
+        email = user.user.email if user.user else "Unknown"
+        access = user.access.value if user.access else "NONE"
+        console.print(f"    • {email}: {_format_access_level(access)}")
+    if len(users) > 5:
+        console.print(f"    ... and {len(users) - 5} more")
+
+
+def _display_sharing_groups(groups: list[GroupAccess]) -> None:
+    """Display sharing groups."""
+    if not groups:
+        return
+
+    console.print(f"\n  [bold]Groups ({len(groups)})[/bold]")
+    for group in groups:
+        name = group.group.get("name", "Unknown") if group.group else "Unknown"
+        access = group.access.value if group.access else "NONE"
+        console.print(f"    • {name}: {_format_access_level(access)}")
+
+
+def _display_sharing_collections(collections: list[CollectionAccess]) -> None:
+    """Display sharing collections."""
+    if not collections:
+        return
+
+    console.print(f"\n  [bold]Collections ({len(collections)})[/bold]")
+    for collection in collections:
+        name = (
+            collection.collection.get("name", "Unknown")
+            if collection.collection
+            else "Unknown"
+        )
+        access = collection.access.value if collection.access else "NONE"
+        console.print(f"    • {name}: {_format_access_level(access)}")
+
+
+def _display_sharing_info(project: Project) -> None:
+    """Display sharing and permissions information."""
+    if not project.sharing:
+        return
+
+    console.print("\n[bold]🔒 Sharing & Permissions[/bold]")
+
+    # Display various access levels
+    _display_sharing_access_level(project.sharing.workspace, "Workspace")
+    _display_sharing_access_level(project.sharing.public_web, "Public Web")
+    _display_sharing_access_level(project.sharing.support, "Support")
+
+    # Display users, groups, and collections
+    _display_sharing_users(project.sharing.users)
+    _display_sharing_groups(project.sharing.groups)
+    _display_sharing_collections(project.sharing.collections)
+
+
 @projects_app.command("get")
 def get_project(
     project_id: str = typer.Argument(help="Unique ID for the project"),
@@ -301,244 +582,23 @@ def get_project(
 
         # Extract basic information
         name = project.title.strip() if project.title else "Untitled"
-        project_type = project.type.value if project.type else "PROJECT"
 
         # Create main panel with project name
         console.print()
         console.print(Panel(f"[bold cyan]{name}[/bold cyan]", expand=False))
 
-        # Basic Information Section
-        console.print("\n[bold]📋 Basic Information[/bold]")
-        info_table = Table(show_header=False, box=None, padding=(0, 2))
-        info_table.add_column(style="dim")
-        info_table.add_column()
-
-        info_table.add_row("ID", f"[cyan]{project.id}[/cyan]")
-        info_table.add_row("Type", project_type)
-
-        # Description
-        if project.description:
-            # Clean up description
-            description = " ".join(project.description.split())
-            if len(description) > 100:
-                description = description[:97] + "..."
-            info_table.add_row("Description", description)
-
-        # Status
-        status_name = project.status.name if project.status else "Unknown"
-
-        status_color = "green" if status_name == "Published" else "yellow"
-        info_table.add_row("Status", f"[{status_color}]{status_name}[/{status_color}]")
-
-        # Published version
-        # Note: publishedVersion field not in current model
-        # Skip this field as it's not available
-
-        console.print(info_table)
-
-        # People Section
-        console.print("\n[bold]👥 People[/bold]")
-        people_table = Table(show_header=False, box=None, padding=(0, 2))
-        people_table.add_column(style="dim")
-        people_table.add_column()
-
-        # Creator
-        if project.creator:
-            people_table.add_row("Creator", project.creator.email)
-
-        # Owner
-        if project.owner:
-            people_table.add_row("Owner", project.owner.email)
-
-        console.print(people_table)
-
-        # Timestamps Section
-        console.print("\n[bold]🕐 Timestamps[/bold]")
-        time_table = Table(show_header=False, box=None, padding=(0, 2))
-        time_table.add_column(style="dim")
-        time_table.add_column()
-
-        # Format timestamps
-        if project.created_at:
-            time_table.add_row("Created", _format_timestamp(project.created_at))
-
-        if project.last_edited_at:
-            time_table.add_row("Last Edited", _format_timestamp(project.last_edited_at))
-
-        if project.last_published_at:
-            time_table.add_row(
-                "Last Published", _format_timestamp(project.last_published_at)
-            )
-
-        if project.archived_at:
-            time_table.add_row(
-                "Archived", f"[red]{_format_timestamp(project.archived_at)}[/red]"
-            )
-
-        if project.trashed_at:
-            time_table.add_row(
-                "Trashed", f"[red]{_format_timestamp(project.trashed_at)}[/red]"
-            )
-
-        console.print(time_table)
-
-        # Analytics Section
-        if project.analytics:
-            console.print("\n[bold]📊 Analytics[/bold]")
-            analytics_table = Table(show_header=False, box=None, padding=(0, 2))
-            analytics_table.add_column(style="dim")
-            analytics_table.add_column()
-
-            # Last viewed
-            if project.analytics.last_viewed_at:
-                analytics_table.add_row(
-                    "Last Viewed", _format_timestamp(project.analytics.last_viewed_at)
-                )
-
-            # Published results updated
-            if project.analytics.published_results_updated_at:
-                analytics_table.add_row(
-                    "Results Updated",
-                    _format_timestamp(project.analytics.published_results_updated_at),
-                )
-
-            # App views
-            if project.analytics.app_views:
-                views_str = []
-                views_str.append(f"All time: {project.analytics.app_views.all_time:,}")
-                views_str.append(
-                    f"30d: {project.analytics.app_views.last_thirty_days:,}"
-                )
-                views_str.append(f"7d: {project.analytics.app_views.last_seven_days:,}")
-
-                if views_str:
-                    analytics_table.add_row("App Views", " | ".join(views_str))
-
-            if analytics_table.row_count > 0:
-                console.print(analytics_table)
-
-        # Categories Section
-        if project.categories:
-            console.print("\n[bold]🏷️  Categories[/bold]")
-            for cat in project.categories:
-                if cat.description:
-                    console.print(f"  • {cat.name}: [dim]{cat.description}[/dim]")
-                else:
-                    console.print(f"  • {cat.name}")
-
-        # Reviews Section
-        if project.reviews:
-            console.print("\n[bold]✅ Reviews[/bold]")
-            console.print(
-                f"  Reviews Required: {'Yes' if project.reviews.required else 'No'}"
-            )
-
-        # Schedules Section
-        if project.schedules:
-            console.print("\n[bold]📅 Schedules[/bold]")
-            for i, schedule in enumerate(project.schedules, 1):
-                if not schedule.enabled:
-                    continue
-
-                cadence = schedule.cadence.value if schedule.cadence else "Unknown"
-                console.print(f"\n  Schedule {i}: [yellow]{cadence}[/yellow]")
-
-                # Show schedule details based on cadence
-                if schedule.cadence == "HOURLY" and schedule.hourly:
-                    console.print(
-                        f"    Runs at: {schedule.hourly.minute} minutes past each hour"
-                    )
-                    console.print(f"    Timezone: {schedule.hourly.timezone}")
-                elif schedule.cadence == "DAILY" and schedule.daily:
-                    console.print(
-                        f"    Runs at: {schedule.daily.hour:02d}:{schedule.daily.minute:02d}"
-                    )
-                    console.print(f"    Timezone: {schedule.daily.timezone}")
-                elif schedule.cadence == "WEEKLY" and schedule.weekly:
-                    console.print(f"    Day: {schedule.weekly.day_of_week.value}")
-                    console.print(
-                        f"    Time: {schedule.weekly.hour:02d}:{schedule.weekly.minute:02d}"
-                    )
-                    console.print(f"    Timezone: {schedule.weekly.timezone}")
-                elif schedule.cadence == "MONTHLY" and schedule.monthly:
-                    console.print(f"    Day: {schedule.monthly.day}")
-                    console.print(
-                        f"    Time: {schedule.monthly.hour:02d}:{schedule.monthly.minute:02d}"
-                    )
-                    console.print(f"    Timezone: {schedule.monthly.timezone}")
-                elif schedule.cadence == "CUSTOM" and schedule.custom:
-                    console.print(f"    Cron: {schedule.custom.cron}")
-                    console.print(f"    Timezone: {schedule.custom.timezone}")
+        # Display each section using helper functions
+        _display_basic_info(project)
+        _display_people_info(project)
+        _display_timestamps(project)
+        _display_analytics(project)
+        _display_categories(project)
+        _display_reviews(project)
+        _display_schedules(project)
 
         # Sharing Section (if requested)
-        if include_sharing and project.sharing:
-            console.print("\n[bold]🔒 Sharing & Permissions[/bold]")
-
-            # Workspace access
-            if project.sharing.workspace:
-                access = (
-                    project.sharing.workspace.access.value
-                    if project.sharing.workspace.access
-                    else "NONE"
-                )
-                console.print("\n  [bold]Workspace[/bold]")
-                console.print(f"    Access Level: {_format_access_level(access)}")
-
-            # Public web access
-            if project.sharing.public_web:
-                access = (
-                    project.sharing.public_web.access.value
-                    if project.sharing.public_web.access
-                    else "NONE"
-                )
-                console.print("\n  [bold]Public Web[/bold]")
-                console.print(f"    Access Level: {_format_access_level(access)}")
-
-            # Support access
-            if project.sharing.support:
-                access = (
-                    project.sharing.support.access.value
-                    if project.sharing.support.access
-                    else "NONE"
-                )
-                console.print("\n  [bold]Support[/bold]")
-                console.print(f"    Access Level: {_format_access_level(access)}")
-
-            # Users
-            if project.sharing.users:
-                console.print(f"\n  [bold]Users ({len(project.sharing.users)})[/bold]")
-                for user in project.sharing.users[:5]:  # Show first 5
-                    email = user.user.email if user.user else "Unknown"
-                    access = user.access.value if user.access else "NONE"
-                    console.print(f"    • {email}: {_format_access_level(access)}")
-                if len(project.sharing.users) > 5:
-                    console.print(f"    ... and {len(project.sharing.users) - 5} more")
-
-            # Groups
-            if project.sharing.groups:
-                console.print(
-                    f"\n  [bold]Groups ({len(project.sharing.groups)})[/bold]"
-                )
-                for group in project.sharing.groups:
-                    name = (
-                        group.group.get("name", "Unknown") if group.group else "Unknown"
-                    )
-                    access = group.access.value if group.access else "NONE"
-                    console.print(f"    • {name}: {_format_access_level(access)}")
-
-            # Collections
-            if project.sharing.collections:
-                console.print(
-                    f"\n  [bold]Collections ({len(project.sharing.collections)})[/bold]"
-                )
-                for collection in project.sharing.collections:
-                    name = (
-                        collection.collection.get("name", "Unknown")
-                        if collection.collection
-                        else "Unknown"
-                    )
-                    access = collection.access.value if collection.access else "NONE"
-                    console.print(f"    • {name}: {_format_access_level(access)}")
+        if include_sharing:
+            _display_sharing_info(project)
 
         console.print()  # Empty line at the end
 

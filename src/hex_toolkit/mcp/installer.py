@@ -285,6 +285,64 @@ class MCPInstaller:
             return False
         return True
 
+    def _detect_install_targets(self, target: str) -> list[str]:
+        """Detect available installation targets."""
+        if target == "auto":
+            targets = []
+            if self.claude_desktop_config_path:
+                targets.append("claude-desktop")
+            if self.is_claude_code_available:
+                targets.append("claude-code")
+
+            if not targets:
+                console.print("[red]No Claude installations detected[/red]")
+                return []
+
+            console.print("\nDetected environments:")
+            if "claude-desktop" in targets:
+                console.print("[green]✓[/green] Claude Desktop")
+            if "claude-code" in targets:
+                console.print("[green]✓[/green] Claude Code")
+            return targets
+        elif target == "all":
+            return ["claude-desktop", "claude-code"]
+        else:
+            return [target]
+
+    def _perform_installations(
+        self, targets: list[str], scope: str, force: bool
+    ) -> list[str]:
+        """Perform installations for each target and return success list."""
+        success = []
+        for t in targets:
+            if t == "claude-desktop" and self.claude_desktop_config_path:
+                if self._install_claude_desktop(force):
+                    success.append("Claude Desktop")
+            elif (
+                t == "claude-code"
+                and self.is_claude_code_available
+                and self._install_claude_code(scope, force)
+            ):
+                success.append(f"Claude Code ({scope})")
+        return success
+
+    def _display_installation_summary(self, success: list[str]) -> None:
+        """Display installation summary and next steps."""
+        if success:
+            console.print("\n[green]✓ Installation complete![/green]")
+            console.print("\n[bold]Next steps:[/bold]")
+            if "Claude Desktop" in success:
+                console.print("• Restart Claude Desktop")
+            console.print("• Look for the 🔧 icon to access Hex tools")
+            console.print('• Try: "List my Hex projects"')
+
+            if not os.getenv("HEX_API_KEY"):
+                console.print(
+                    "\n[yellow]Remember to set your HEX_API_KEY environment variable![/yellow]"
+                )
+        else:
+            console.print("\n[red]Installation failed[/red]")
+
     def install(
         self, target: str = "auto", scope: str = "user", force: bool = False
     ) -> None:
@@ -301,55 +359,15 @@ class MCPInstaller:
         self._check_api_key()
 
         # Detect available targets
-        targets = []
-        if target == "auto":
-            if self.claude_desktop_config_path:
-                targets.append("claude-desktop")
-            if self.is_claude_code_available:
-                targets.append("claude-code")
-
-            if not targets:
-                console.print("[red]No Claude installations detected[/red]")
-                return
-
-            console.print("\nDetected environments:")
-            if "claude-desktop" in targets:
-                console.print("[green]✓[/green] Claude Desktop")
-            if "claude-code" in targets:
-                console.print("[green]✓[/green] Claude Code")
-        elif target == "all":
-            targets = ["claude-desktop", "claude-code"]
-        else:
-            targets = [target]
+        targets = self._detect_install_targets(target)
+        if not targets:
+            return
 
         # Install for each target
-        success = []
-        for t in targets:
-            if t == "claude-desktop" and self.claude_desktop_config_path:
-                if self._install_claude_desktop(force):
-                    success.append("Claude Desktop")
-            elif (
-                t == "claude-code"
-                and self.is_claude_code_available
-                and self._install_claude_code(scope, force)
-            ):
-                success.append(f"Claude Code ({scope})")
+        success = self._perform_installations(targets, scope, force)
 
         # Show summary
-        if success:
-            console.print("\n[green]✓ Installation complete![/green]")
-            console.print("\n[bold]Next steps:[/bold]")
-            if "Claude Desktop" in success:
-                console.print("• Restart Claude Desktop")
-            console.print("• Look for the 🔧 icon to access Hex tools")
-            console.print('• Try: "List my Hex projects"')
-
-            if not os.getenv("HEX_API_KEY"):
-                console.print(
-                    "\n[yellow]Remember to set your HEX_API_KEY environment variable![/yellow]"
-                )
-        else:
-            console.print("\n[red]Installation failed[/red]")
+        self._display_installation_summary(success)
 
     def uninstall(self, target: str = "auto", scope: str = "user") -> None:
         """Uninstall the Hex API MCP server."""

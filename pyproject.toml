@@ -4,47 +4,36 @@ version = "0.5.1"
 description = "A comprehensive toolkit for working with Hex: SDK, CLI, and MCP integration"
 readme = "README.md"
 requires-python = ">=3.10"
-authors = [
-    { name = "Franccesco Orozco", email = "franccesco@codingdose.info" }
-]
+authors = [{ name = "Franccesco Orozco", email = "franccesco@codingdose.info" }]
 license = { text = "MIT" }
 classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "httpx>=0.25.0",
-    "pydantic>=2.0",
-    "python-dateutil>=2.8.2",
-    "typing-extensions>=4.8.0",
+  "httpx>=0.25.0",
+  "pydantic>=2.0",
+  "python-dateutil>=2.8.2",
+  "typing-extensions>=4.8.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4.0",
-    "pytest-cov>=4.1.0",
-    "pytest-mock>=3.11.0",
-    "ruff>=0.1.0",
-    "pre-commit>=3.3.0",
-    "jsonschema>=4.0.0",
+  "pytest>=7.4.0",
+  "pytest-cov>=4.1.0",
+  "pytest-mock>=3.11.0",
+  "ruff>=0.1.0",
+  "pre-commit>=3.3.0",
+  "jsonschema>=4.0.0",
 ]
-cli = [
-    "typer>=0.9.0",
-    "rich>=13.5.0",
-]
-mcp = [
-    "fastmcp>=1.0.0",
-]
-all = [
-    "typer>=0.9.0",
-    "rich>=13.5.0",
-    "fastmcp>=1.0.0",
-]
+cli = ["typer>=0.9.0", "rich>=13.5.0"]
+mcp = ["fastmcp>=1.0.0"]
+all = ["typer>=0.9.0", "rich>=13.5.0", "fastmcp>=1.0.0"]
 
 [project.scripts]
 hex = "hex_toolkit.cli:app"
@@ -61,12 +50,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.sdist]
-exclude = [
-    "/.github",
-    "/docs",
-    "/tests",
-    "/examples",
-]
+exclude = ["/.github", "/docs", "/tests", "/examples"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/hex_toolkit"]
@@ -75,13 +59,14 @@ packages = ["src/hex_toolkit"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = [
-    "--strict-markers",
-    "--strict-config",
-    "--verbose",
-    "-m", "not integration",  # Skip integration tests by default
+  "--strict-markers",
+  "--strict-config",
+  "--verbose",
+  "-m",
+  "not integration",  # Skip integration tests by default
 ]
 markers = [
-    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+  "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
 ]
 
 [tool.ruff]
@@ -90,20 +75,21 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = [
-    "E",    # pycodestyle errors
-    "W",    # pycodestyle warnings
-    "F",    # pyflakes
-    "I",    # isort
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
-    "UP",   # pyupgrade
-    "ARG",  # flake8-unused-arguments
-    "SIM",  # flake8-simplify
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "UP",  # pyupgrade
+  "ARG", # flake8-unused-arguments
+  "SIM", # flake8-simplify
+  "C901", # McCabe complexity
 ]
 ignore = [
-    "E501",  # line too long (handled by formatter)
-    "B008",  # do not perform function calls in argument defaults
-    "B905",  # strict= parameter of zip
+  "E501", # line too long (handled by formatter)
+  "B008", # do not perform function calls in argument defaults
+  "B905", # strict= parameter of zip
 ]
 
 [tool.ruff.format]
@@ -128,7 +114,14 @@ reportUnknownVariableType = false
 reportUntypedFunctionDecorator = false
 reportUntypedClassDecorator = false
 reportUntypedBaseClass = false
-exclude = ["**/node_modules", "**/__pycache__", ".git", ".venv", "dist", "build"]
+exclude = [
+  "**/node_modules",
+  "**/__pycache__",
+  ".git",
+  ".venv",
+  "dist",
+  "build",
+]
 
 # Test-specific overrides
 extraPaths = ["tests"]
@@ -158,6 +151,4 @@ show_missing = true
 skip_covered = false
 
 [dependency-groups]
-dev = [
-    "pyright>=1.1.402",
-]
+dev = ["pyright>=1.1.402"]
