@@ -152,3 +152,7 @@ The OpenAPI validation ensures your SDK stays in sync with the API with minimal 
 
 - bump version according to semver before commiting changes
 - Run uv sync when bumping so the new version always appears in `uv.lock`
+
+## Memories
+
+- Run ruff and pyright after refactors or additions to make sure our code is of high-quality
