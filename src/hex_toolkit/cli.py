@@ -18,6 +18,7 @@ from hex_toolkit.models.projects import (
     GroupAccess,
     Project,
     PublicWebAccess,
+    Schedule,
     SortBy,
     SortDirection,
     SupportAccess,
@@ -330,7 +331,7 @@ def _display_basic_info(project: Project) -> None:
     info_table.add_column()
 
     info_table.add_row("ID", f"[cyan]{project.id}[/cyan]")
-    info_table.add_row("Type", project.type.value if project.type else "PROJECT")
+    info_table.add_row("Type", project.type if project.type else "PROJECT")
 
     # Description
     if project.description:
@@ -457,6 +458,40 @@ def _display_reviews(project: Project) -> None:
     console.print(f"  Reviews Required: {'Yes' if project.reviews.required else 'No'}")
 
 
+def _display_schedule_details(schedule: Schedule) -> None:
+    """Display details for a specific schedule."""
+    if schedule.cadence == "HOURLY" and schedule.hourly:
+        console.print(
+            f"    Runs at: {schedule.hourly.minute} minutes past each hour"
+        )
+        console.print(f"    Timezone: {schedule.hourly.timezone}")
+    elif schedule.cadence == "DAILY" and schedule.daily:
+        console.print(
+            f"    Runs at: {schedule.daily.hour:02d}:{schedule.daily.minute:02d}"
+        )
+        console.print(f"    Timezone: {schedule.daily.timezone}")
+    elif schedule.cadence == "WEEKLY" and schedule.weekly:
+        # Handle both enum and string values
+        if hasattr(schedule.weekly.day_of_week, 'value'):
+            day = schedule.weekly.day_of_week.value
+        else:
+            day = schedule.weekly.day_of_week
+        console.print(f"    Day: {day}")
+        console.print(
+            f"    Time: {schedule.weekly.hour:02d}:{schedule.weekly.minute:02d}"
+        )
+        console.print(f"    Timezone: {schedule.weekly.timezone}")
+    elif schedule.cadence == "MONTHLY" and schedule.monthly:
+        console.print(f"    Day: {schedule.monthly.day}")
+        console.print(
+            f"    Time: {schedule.monthly.hour:02d}:{schedule.monthly.minute:02d}"
+        )
+        console.print(f"    Timezone: {schedule.monthly.timezone}")
+    elif schedule.cadence == "CUSTOM" and schedule.custom:
+        console.print(f"    Cron: {schedule.custom.cron}")
+        console.print(f"    Timezone: {schedule.custom.timezone}")
+
+
 def _display_schedules(project: Project) -> None:
     """Display schedule information."""
     if not project.schedules:
@@ -467,35 +502,15 @@ def _display_schedules(project: Project) -> None:
         if not schedule.enabled:
             continue
 
-        cadence = schedule.cadence.value if schedule.cadence else "Unknown"
+        # Handle both enum and string values
+        if hasattr(schedule.cadence, 'value'):
+            cadence = schedule.cadence.value
+        else:
+            cadence = schedule.cadence if schedule.cadence else "Unknown"
         console.print(f"\n  Schedule {i}: [yellow]{cadence}[/yellow]")
 
-        # Show schedule details based on cadence
-        if schedule.cadence == "HOURLY" and schedule.hourly:
-            console.print(
-                f"    Runs at: {schedule.hourly.minute} minutes past each hour"
-            )
-            console.print(f"    Timezone: {schedule.hourly.timezone}")
-        elif schedule.cadence == "DAILY" and schedule.daily:
-            console.print(
-                f"    Runs at: {schedule.daily.hour:02d}:{schedule.daily.minute:02d}"
-            )
-            console.print(f"    Timezone: {schedule.daily.timezone}")
-        elif schedule.cadence == "WEEKLY" and schedule.weekly:
-            console.print(f"    Day: {schedule.weekly.day_of_week.value}")
-            console.print(
-                f"    Time: {schedule.weekly.hour:02d}:{schedule.weekly.minute:02d}"
-            )
-            console.print(f"    Timezone: {schedule.weekly.timezone}")
-        elif schedule.cadence == "MONTHLY" and schedule.monthly:
-            console.print(f"    Day: {schedule.monthly.day}")
-            console.print(
-                f"    Time: {schedule.monthly.hour:02d}:{schedule.monthly.minute:02d}"
-            )
-            console.print(f"    Timezone: {schedule.monthly.timezone}")
-        elif schedule.cadence == "CUSTOM" and schedule.custom:
-            console.print(f"    Cron: {schedule.custom.cron}")
-            console.print(f"    Timezone: {schedule.custom.timezone}")
+        # Display schedule details
+        _display_schedule_details(schedule)
 
 
 def _display_sharing_access_level(
@@ -505,7 +520,11 @@ def _display_sharing_access_level(
     if not sharing_obj:
         return
 
-    access = sharing_obj.access.value if sharing_obj.access else "NONE"
+    # Handle both enum and string values (for testing compatibility)
+    if hasattr(sharing_obj.access, 'value'):
+        access = sharing_obj.access.value
+    else:
+        access = sharing_obj.access if sharing_obj.access else "NONE"
     console.print(f"\n  [bold]{title}[/bold]")
     console.print(f"    Access Level: {_format_access_level(access)}")
 
@@ -518,7 +537,11 @@ def _display_sharing_users(users: list[UserAccess]) -> None:
     console.print(f"\n  [bold]Users ({len(users)})[/bold]")
     for user in users[:5]:  # Show first 5
         email = user.user.email if user.user else "Unknown"
-        access = user.access.value if user.access else "NONE"
+        # Handle both enum and string values
+        if hasattr(user.access, 'value'):
+            access = user.access.value
+        else:
+            access = user.access if user.access else "NONE"
         console.print(f"    • {email}: {_format_access_level(access)}")
     if len(users) > 5:
         console.print(f"    ... and {len(users) - 5} more")
@@ -532,7 +555,11 @@ def _display_sharing_groups(groups: list[GroupAccess]) -> None:
     console.print(f"\n  [bold]Groups ({len(groups)})[/bold]")
     for group in groups:
         name = group.group.get("name", "Unknown") if group.group else "Unknown"
-        access = group.access.value if group.access else "NONE"
+        # Handle both enum and string values
+        if hasattr(group.access, 'value'):
+            access = group.access.value
+        else:
+            access = group.access if group.access else "NONE"
         console.print(f"    • {name}: {_format_access_level(access)}")
 
 
@@ -548,7 +575,11 @@ def _display_sharing_collections(collections: list[CollectionAccess]) -> None:
             if collection.collection
             else "Unknown"
         )
-        access = collection.access.value if collection.access else "NONE"
+        # Handle both enum and string values
+        if hasattr(collection.access, 'value'):
+            access = collection.access.value
+        else:
+            access = collection.access if collection.access else "NONE"
         console.print(f"    • {name}: {_format_access_level(access)}")
 
 
