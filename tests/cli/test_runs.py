@@ -11,8 +11,8 @@ class TestRunsStatus:
     """Test 'hex runs status' command."""
 
     def test_status_basic(
-        self, runner, mock_env_api_key, mock_hex_client, sample_run_status
-    ):  # noqa: ARG002
+        self, runner, mock_hex_client, sample_run_status
+    ):
         """Test basic run status retrieval."""
         mock_hex_client.runs.get_status.return_value = sample_run_status
 
@@ -27,7 +27,7 @@ class TestRunsStatus:
             "project-123", "run-456"
         )
 
-    def test_status_running(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_status_running(self, runner, mock_hex_client):
         """Test status display for running job."""
         status = Mock(
             run_id="run-123",
@@ -44,7 +44,7 @@ class TestRunsStatus:
         assert "RUNNING" in result.output
         assert "N/A" in result.output  # End time should be N/A
 
-    def test_status_not_found(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_status_not_found(self, runner, mock_hex_client):
         """Test handling of run not found."""
         mock_hex_client.runs.get_status.side_effect = HexAPIError(
             "Run not found", status_code=404
@@ -55,7 +55,7 @@ class TestRunsStatus:
         assert result.exit_code == 1
         assert "Run not found" in result.output
 
-    def test_status_api_error(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_status_api_error(self, runner, mock_hex_client):
         """Test handling of API errors."""
         mock_hex_client.runs.get_status.side_effect = HexAPIError(
             "Internal server error", status_code=500, trace_id="test-trace"
@@ -70,7 +70,7 @@ class TestRunsStatus:
 class TestRunsList:
     """Test 'hex runs list' command."""
 
-    def test_list_basic(self, runner, mock_env_api_key, mock_hex_client, sample_runs):  # noqa: ARG002
+    def test_list_basic(self, runner, mock_hex_client, sample_runs):
         """Test basic run listing."""
         mock_hex_client.runs.list.return_value = Mock(runs=sample_runs)
 
@@ -92,8 +92,8 @@ class TestRunsList:
         )
 
     def test_list_with_options(
-        self, runner, mock_env_api_key, mock_hex_client, sample_runs
-    ):  # noqa: ARG002
+        self, runner, mock_hex_client, sample_runs
+    ):
         """Test run listing with options."""
         mock_hex_client.runs.list.return_value = Mock(runs=sample_runs[:2])
 
@@ -118,7 +118,7 @@ class TestRunsList:
             status_filter=None,
         )
 
-    def test_list_with_status_filter(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_list_with_status_filter(self, runner, mock_hex_client):
         """Test run listing with status filter."""
         from datetime import datetime
 
@@ -152,8 +152,8 @@ class TestRunsList:
         )
 
     def test_list_invalid_status_filter(
-        self, runner, mock_env_api_key, mock_hex_client
-    ):  # noqa: ARG002
+        self, runner
+    ):
         """Test error with invalid status filter."""
         result = runner.invoke(
             app,
@@ -170,7 +170,7 @@ class TestRunsList:
         assert "Invalid status: invalid-status" in result.output
         assert "Valid options:" in result.output
 
-    def test_list_empty_results(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_list_empty_results(self, runner, mock_hex_client):
         """Test listing with no runs."""
         mock_hex_client.runs.list.return_value = Mock(runs=[])
 
@@ -179,7 +179,7 @@ class TestRunsList:
         assert result.exit_code == 0
         assert "No runs found" in result.output
 
-    def test_list_duration_calculation(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_list_duration_calculation(self, runner, mock_hex_client):
         """Test duration calculation in run list."""
         from datetime import datetime
 
@@ -213,8 +213,8 @@ class TestRunsList:
         assert "2h 30m" in result.output  # Long run
 
     def test_list_shows_count(
-        self, runner, mock_env_api_key, mock_hex_client, sample_runs
-    ):  # noqa: ARG002
+        self, runner, mock_hex_client, sample_runs
+    ):
         """Test run count is displayed."""
         mock_hex_client.runs.list.return_value = Mock(runs=sample_runs)
 
@@ -227,7 +227,7 @@ class TestRunsList:
 class TestRunsCancel:
     """Test 'hex runs cancel' command."""
 
-    def test_cancel_with_confirmation(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_cancel_with_confirmation(self, runner, mock_hex_client):
         """Test cancel with user confirmation."""
         mock_hex_client.runs.cancel.return_value = None
 
@@ -241,7 +241,7 @@ class TestRunsCancel:
         assert "Run run-456 cancelled successfully" in result.output
         mock_hex_client.runs.cancel.assert_called_once_with("project-123", "run-456")
 
-    def test_cancel_declined(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_cancel_declined(self, runner, mock_hex_client):
         """Test cancel declined by user."""
         # Simulate user declining
         result = runner.invoke(
@@ -253,7 +253,7 @@ class TestRunsCancel:
         assert "Cancelled" in result.output
         mock_hex_client.runs.cancel.assert_not_called()
 
-    def test_cancel_with_yes_flag(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_cancel_with_yes_flag(self, runner, mock_hex_client):
         """Test cancel with --yes flag skips confirmation."""
         mock_hex_client.runs.cancel.return_value = None
 
@@ -266,7 +266,7 @@ class TestRunsCancel:
         assert "Run run-456 cancelled successfully" in result.output
         mock_hex_client.runs.cancel.assert_called_once_with("project-123", "run-456")
 
-    def test_cancel_not_found(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_cancel_not_found(self, runner, mock_hex_client):
         """Test handling of run not found during cancel."""
         mock_hex_client.runs.cancel.side_effect = HexAPIError(
             "Run not found", status_code=404
@@ -279,7 +279,7 @@ class TestRunsCancel:
         assert result.exit_code == 1
         assert "Run not found" in result.output
 
-    def test_cancel_already_completed(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_cancel_already_completed(self, runner, mock_hex_client):
         """Test cancelling an already completed run."""
         mock_hex_client.runs.cancel.side_effect = HexAPIError(
             "Cannot cancel completed run", status_code=400
@@ -292,7 +292,7 @@ class TestRunsCancel:
         assert result.exit_code == 1
         assert "Cannot cancel completed run" in result.output
 
-    def test_cancel_general_error(self, runner, mock_env_api_key, mock_hex_client):  # noqa: ARG002
+    def test_cancel_general_error(self, runner, mock_hex_client):
         """Test handling of general errors during cancel."""
         mock_hex_client.runs.cancel.side_effect = Exception("Network error")
 
