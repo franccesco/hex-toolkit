@@ -690,7 +690,7 @@ def get_run_status(
         console.print(f"Run ID: [cyan]{status.run_id}[/cyan]")
         console.print(f"Project ID: [cyan]{status.project_id}[/cyan]")
         console.print(
-            f"Status: {_format_status(status.status.value if status.status else 'N/A')}"
+            f"Status: {_format_status(status.status if status.status else 'N/A')}"
         )
         console.print(
             f"Started: {_format_timestamp(status.start_time) if status.start_time else 'N/A'}"
@@ -774,7 +774,7 @@ def list_runs(
 
             table.add_row(
                 run_id,
-                _format_status(run.status.value if run.status else "N/A"),
+                _format_status(run.status if run.status else "N/A"),
                 start_time_str,
                 end_time_str,
                 duration,
@@ -854,7 +854,7 @@ def _wait_for_run_completion(
         while True:
             try:
                 status = client.runs.get_status(project_id, run_id)
-                current_status = status.status.value if status.status else "UNKNOWN"
+                current_status = status.status if status.status else "UNKNOWN"
 
                 progress.update(task, description=f"Status: {current_status}")
 
