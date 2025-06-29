@@ -8,8 +8,8 @@ from hex_toolkit.resources.semantic_models import SemanticModelsResource
 
 __all__ = [
     "BaseResource",
+    "EmbeddingResource",
     "ProjectsResource",
     "RunsResource",
-    "EmbeddingResource",
     "SemanticModelsResource",
 ]

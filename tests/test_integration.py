@@ -22,7 +22,12 @@ class TestIntegration:
 
     @pytest.fixture
     def client(self):
-        """Create a real HexClient instance."""
+        """Create a real HexClient instance.
+
+        Returns:
+            HexClient: A real HexClient instance configured with API credentials.
+
+        """
         api_key = os.getenv("HEX_API_KEY")
         base_url = os.getenv("HEX_API_BASE_URL")  # Optional custom base URL
 

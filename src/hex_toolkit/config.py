@@ -23,6 +23,10 @@ class HexConfig:
             timeout: Request timeout in seconds (default: 30.0)
             max_retries: Maximum number of retries for failed requests (default: 3)
             verify_ssl: Whether to verify SSL certificates (default: True)
+
+        Raises:
+            ValueError: If api_key is empty or None.
+
         """
         if not api_key:
             raise ValueError("API key cannot be empty")
@@ -35,7 +39,12 @@ class HexConfig:
 
     @classmethod
     def from_env(cls, **overrides: Any) -> "HexConfig":
-        """Create config from environment variables with optional overrides."""
+        """Create config from environment variables with optional overrides.
+
+        Returns:
+            HexConfig: A new HexConfig instance with settings from environment.
+
+        """
         # Get API key from overrides or environment
         api_key = overrides.get("api_key") or os.getenv("HEX_API_KEY")
 

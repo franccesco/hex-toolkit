@@ -27,6 +27,7 @@ class RunsResource(BaseResource):
 
         Returns:
             ProjectStatusResponse with run status information
+
         """
         data = self._get(f"/v1/projects/{project_id}/runs/{run_id}")
         return self._parse_response(data, ProjectStatusResponse)
@@ -48,6 +49,7 @@ class RunsResource(BaseResource):
 
         Returns:
             ProjectRunsResponse with list of runs and pagination info
+
         """
         params = {}
         if limit is not None:
@@ -69,5 +71,6 @@ class RunsResource(BaseResource):
 
         Returns:
             Cancellation result
+
         """
         return self._delete(f"/v1/projects/{project_id}/runs/{run_id}")

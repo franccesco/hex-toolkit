@@ -32,6 +32,7 @@ class SemanticModelsResource(BaseResource):
 
         Returns:
             SemanticModelsSyncResponse with warnings and debug information
+
         """
         request_data = {
             "verbose": verbose,

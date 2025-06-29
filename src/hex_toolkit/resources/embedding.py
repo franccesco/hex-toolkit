@@ -37,6 +37,7 @@ class EmbeddingResource(BaseResource):
 
         Returns:
             EmbeddingResponse with the presigned URL
+
         """
         request_data = {}
         if hex_user_attributes:

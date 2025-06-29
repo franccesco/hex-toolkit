@@ -28,12 +28,18 @@ class MCPInstaller:
     """Handles installation of Hex Toolkit MCP server for Claude Desktop and Claude Code."""
 
     def __init__(self):
+        """Initialize the MCP installer."""
         self.system = platform.system()
         self.claude_desktop_config_path = self._get_claude_desktop_config_path()
         self.is_claude_code_available = self._check_claude_code()
 
     def _get_claude_desktop_config_path(self) -> Path | None:
-        """Get the Claude Desktop configuration file path based on OS."""
+        """Get the Claude Desktop configuration file path based on OS.
+
+        Returns:
+            Path | None: Path to config file if found, None otherwise.
+
+        """
         if self.system == "Darwin":  # macOS
             path = (
                 Path.home()
@@ -56,7 +62,12 @@ class MCPInstaller:
         return path if path.parent.exists() else None
 
     def _check_claude_code(self) -> bool:
-        """Check if Claude Code CLI is available."""
+        """Check if Claude Code CLI is available.
+
+        Returns:
+            bool: True if Claude Code CLI is available, False otherwise.
+
+        """
         try:
             result = subprocess.run(
                 ["claude", "--version"], capture_output=True, text=True, timeout=5
@@ -66,7 +77,12 @@ class MCPInstaller:
             return False
 
     def _get_hex_toolkit_command_claude_desktop(self) -> list[str]:
-        """Get the command to run hex MCP server for Claude Desktop (needs absolute paths)."""
+        """Get the command to run hex MCP server for Claude Desktop (needs absolute paths).
+
+        Returns:
+            list[str]: Command and arguments to run the MCP server.
+
+        """
         # Check if hex is installed in PATH
         hex_path = shutil.which("hex")
 
@@ -77,7 +93,12 @@ class MCPInstaller:
             return [sys.executable, "-m", "hex_toolkit.cli", "mcp", "serve"]
 
     def _get_hex_toolkit_command_claude_code(self) -> list[str]:
-        """Get the command to run hex MCP server for Claude Code (can use relative paths)."""
+        """Get the command to run hex MCP server for Claude Code (can use relative paths).
+
+        Returns:
+            list[str]: Command and arguments to run the MCP server.
+
+        """
         # Check if hex is installed in PATH
         hex_toolkit_in_path = shutil.which("hex") is not None
 
@@ -88,7 +109,12 @@ class MCPInstaller:
             return [sys.executable, "-m", "hex_toolkit.cli", "mcp", "serve"]
 
     def _read_claude_desktop_config(self) -> dict[str, Any]:
-        """Read Claude Desktop configuration."""
+        """Read Claude Desktop configuration.
+
+        Returns:
+            dict[str, Any]: Current configuration or empty dict if not found.
+
+        """
         if (
             not self.claude_desktop_config_path
             or not self.claude_desktop_config_path.exists()
@@ -102,7 +128,12 @@ class MCPInstaller:
             return {}
 
     def _write_claude_desktop_config(self, config: dict[str, Any]) -> None:
-        """Write Claude Desktop configuration."""
+        """Write Claude Desktop configuration.
+
+        Raises:
+            ValueError: If Claude Desktop configuration path is not found.
+
+        """
         if not self.claude_desktop_config_path:
             raise ValueError("Claude Desktop configuration path not found")
 
@@ -114,7 +145,12 @@ class MCPInstaller:
             json.dump(config, f, indent=2)
 
     def _backup_config(self, path: Path) -> Path | None:
-        """Create a backup of the configuration file."""
+        """Create a backup of the configuration file.
+
+        Returns:
+            Path | None: Path to backup file if created, None if no backup needed.
+
+        """
         if not path.exists():
             return None
 
@@ -123,7 +159,12 @@ class MCPInstaller:
         return backup_path
 
     def _install_claude_desktop(self, force: bool = False) -> bool:
-        """Install MCP server for Claude Desktop."""
+        """Install MCP server for Claude Desktop.
+
+        Returns:
+            bool: True if installation was successful, False otherwise.
+
+        """
         console.print("\n[cyan]Installing for Claude Desktop...[/cyan]")
 
         if not self.claude_desktop_config_path:
@@ -194,7 +235,12 @@ class MCPInstaller:
         return True
 
     def _install_claude_code(self, scope: str = "user", force: bool = False) -> bool:  # noqa: ARG002
-        """Install MCP server for Claude Code."""
+        """Install MCP server for Claude Code.
+
+        Returns:
+            bool: True if installation was successful, False otherwise.
+
+        """
         console.print("\n[cyan]Installing for Claude Code...[/cyan]")
 
         if not self.is_claude_code_available:
@@ -243,7 +289,12 @@ class MCPInstaller:
             return False
 
     def _install_project_config(self) -> bool:
-        """Install MCP server configuration in project's .mcp.json."""
+        """Install MCP server configuration in project's .mcp.json.
+
+        Returns:
+            bool: True if configuration was added, False otherwise.
+
+        """
         project_root = find_project_root()
         if not project_root:
             console.print(
@@ -274,7 +325,12 @@ class MCPInstaller:
             return False
 
     def _check_api_key(self) -> bool:
-        """Check if HEX_API_KEY is set."""
+        """Check if HEX_API_KEY is set.
+
+        Returns:
+            bool: True if API key is set, False otherwise.
+
+        """
         api_key = os.getenv("HEX_API_KEY")
         if not api_key:
             console.print(
@@ -286,7 +342,12 @@ class MCPInstaller:
         return True
 
     def _detect_install_targets(self, target: str) -> list[str]:
-        """Detect available installation targets."""
+        """Detect available installation targets.
+
+        Returns:
+            list[str]: List of detected installation targets.
+
+        """
         if target == "auto":
             targets = []
             if self.claude_desktop_config_path:
@@ -312,7 +373,12 @@ class MCPInstaller:
     def _perform_installations(
         self, targets: list[str], scope: str, force: bool
     ) -> list[str]:
-        """Perform installations for each target and return success list."""
+        """Perform installations for each target and return success list.
+
+        Returns:
+            list[str]: List of successfully installed targets.
+
+        """
         success = []
         for t in targets:
             if t == "claude-desktop" and self.claude_desktop_config_path:

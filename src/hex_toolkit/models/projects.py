@@ -207,9 +207,9 @@ class SupportAccess(HexBaseModel):
 class SharingInfo(HexBaseModel):
     """Project sharing configuration."""
 
-    users: list[UserAccess] = []
-    collections: list[CollectionAccess] = []
-    groups: list[GroupAccess] = []
+    users: list[UserAccess] = Field(default_factory=list)
+    collections: list[CollectionAccess] = Field(default_factory=list)
+    groups: list[GroupAccess] = Field(default_factory=list)
     workspace: WorkspaceAccess
     public_web: PublicWebAccess = Field(..., alias="publicWeb")
     support: SupportAccess
@@ -225,7 +225,7 @@ class Project(HexBaseModel):
     creator: CreatorInfo
     owner: UserInfo
     status: StatusInfo | None = None
-    categories: list[CategoryInfo] = []
+    categories: list[CategoryInfo] = Field(default_factory=list)
     reviews: ReviewsInfo
     analytics: AnalyticsInfo
     last_edited_at: datetime = Field(..., alias="lastEditedAt")
@@ -233,7 +233,7 @@ class Project(HexBaseModel):
     created_at: datetime = Field(..., alias="createdAt")
     archived_at: datetime | None = Field(None, alias="archivedAt")
     trashed_at: datetime | None = Field(None, alias="trashedAt")
-    schedules: list[Schedule] = []
+    schedules: list[Schedule] = Field(default_factory=list)
     sharing: SharingInfo | None = None
 
 

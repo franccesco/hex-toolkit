@@ -27,7 +27,12 @@ from hex_toolkit.models.projects import (
 
 @pytest.fixture
 def runner():
-    """Create a CLI runner for testing."""
+    """Create a CLI runner for testing.
+
+    Returns:
+        CliRunner: A Typer CLI test runner instance.
+
+    """
     return CliRunner()
 
 
@@ -45,7 +50,12 @@ def mock_env_no_api_key(monkeypatch):
 
 @pytest.fixture
 def mock_hex_client():
-    """Mock the HexClient instance."""
+    """Mock the HexClient instance.
+
+    Yields:
+        Mock: Mocked HexClient instance.
+
+    """
     with patch("hex_toolkit.cli.get_client") as mock_get_client:
         client = Mock()
         mock_get_client.return_value = client
@@ -54,7 +64,12 @@ def mock_hex_client():
 
 @pytest.fixture
 def sample_project():
-    """Create a sample project for testing."""
+    """Create a sample project for testing.
+
+    Returns:
+        Project: A sample Project instance with test data.
+
+    """
     return Project(
         id=UUID("12345678-1234-1234-1234-123456789012"),
         title="Test Project",
@@ -94,7 +109,12 @@ def sample_project():
 
 @pytest.fixture
 def sample_projects(sample_project):  # noqa: ARG001
-    """Create a list of sample projects."""
+    """Create a list of sample projects.
+
+    Returns:
+        list[Project]: A list of sample Project instances.
+
+    """
     import uuid
 
     projects = []
@@ -130,7 +150,12 @@ def sample_projects(sample_project):  # noqa: ARG001
 
 @pytest.fixture
 def sample_run_info():
-    """Create sample run info for testing."""
+    """Create sample run info for testing.
+
+    Returns:
+        Mock: A mock object with run information.
+
+    """
     return Mock(
         run_id="87654321-4321-4321-4321-210987654321",
         project_id="12345678-1234-1234-1234-123456789012",
@@ -141,7 +166,12 @@ def sample_run_info():
 
 @pytest.fixture
 def sample_run_status():
-    """Create sample run status for testing."""
+    """Create sample run status for testing.
+
+    Returns:
+        Mock: A mock object with run status information.
+
+    """
     return Mock(
         run_id="87654321-4321-4321-4321-210987654321",
         project_id="12345678-1234-1234-1234-123456789012",
@@ -153,7 +183,12 @@ def sample_run_status():
 
 @pytest.fixture
 def sample_runs():
-    """Create sample runs for testing."""
+    """Create sample runs for testing.
+
+    Returns:
+        list[Mock]: A list of mock run objects with varying statuses.
+
+    """
     runs = []
     statuses = ["COMPLETED", "RUNNING", "FAILED", "PENDING"]
     for i in range(4):
@@ -170,7 +205,12 @@ def sample_runs():
 
 @pytest.fixture
 def mock_list_response(sample_projects):
-    """Create a mock list response."""
+    """Create a mock list response.
+
+    Returns:
+        Mock: A mock ProjectList response object.
+
+    """
     return Mock(
         values=sample_projects,
         pagination=Mock(after=None),
@@ -179,13 +219,23 @@ def mock_list_response(sample_projects):
 
 @pytest.fixture
 def mock_console():
-    """Mock the Rich console to avoid output during tests."""
+    """Mock the Rich console to avoid output during tests.
+
+    Yields:
+        Mock: Mocked Rich console object.
+
+    """
     with patch("hex_toolkit.cli.console") as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_progress():
-    """Mock Rich Progress to avoid output during tests."""
+    """Mock Rich Progress to avoid output during tests.
+
+    Yields:
+        Mock: Mocked Rich Progress class.
+
+    """
     with patch("hex_toolkit.cli.Progress") as mock:
         yield mock

@@ -13,6 +13,15 @@ class HexAPIError(Exception):
         response_data: dict[str, Any] | None = None,
         trace_id: str | None = None,
     ):
+        """Initialize the Hex API error.
+
+        Args:
+            message: The error message.
+            status_code: HTTP status code if applicable.
+            response_data: Response data from the API.
+            trace_id: Trace ID for debugging.
+
+        """
         super().__init__(message)
         self.message = message
         self.status_code = status_code
@@ -20,6 +29,12 @@ class HexAPIError(Exception):
         self.trace_id = trace_id
 
     def __str__(self):
+        """Return string representation of the error.
+
+        Returns:
+            str: Formatted error message with status code and trace ID if available.
+
+        """
         parts = [self.message]
         if self.status_code:
             parts.append(f"(Status: {self.status_code})")
@@ -52,6 +67,17 @@ class HexValidationError(HexAPIError):
         invalid_params: list[dict[str, Any]] | None = None,
         not_found_params: list[dict[str, Any]] | None = None,
     ):
+        """Initialize the validation error.
+
+        Args:
+            message: The error message.
+            status_code: HTTP status code if applicable.
+            response_data: Response data from the API.
+            trace_id: Trace ID for debugging.
+            invalid_params: List of invalid parameters.
+            not_found_params: List of not found parameters.
+
+        """
         super().__init__(message, status_code, response_data, trace_id)
         self.invalid_params = invalid_params or []
         self.not_found_params = not_found_params or []
@@ -68,6 +94,16 @@ class HexRateLimitError(HexAPIError):
         trace_id: str | None = None,
         retry_after: int | None = None,
     ):
+        """Initialize the rate limit error.
+
+        Args:
+            message: The error message.
+            status_code: HTTP status code if applicable.
+            response_data: Response data from the API.
+            trace_id: Trace ID for debugging.
+            retry_after: Seconds to wait before retrying.
+
+        """
         super().__init__(message, status_code, response_data, trace_id)
         self.retry_after = retry_after
 

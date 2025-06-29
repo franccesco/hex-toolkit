@@ -18,9 +18,9 @@ except Exception:
     # Fallback for development or when package isn't installed
     __version__ = "0.5.3"
 __all__ = [
-    "HexClient",
     "HexAPIError",
     "HexAuthenticationError",
+    "HexClient",
     "HexNotFoundError",
     "HexRateLimitError",
     "HexValidationError",

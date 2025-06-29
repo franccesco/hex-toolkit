@@ -37,6 +37,7 @@ class HexClient:
             base_url: Base URL for the API. Defaults to https://app.hex.tech/api
             config: Full configuration object. If provided, other params are ignored.
             **kwargs: Additional configuration options (timeout, max_retries, etc.)
+
         """
         if config:
             self.config = config
@@ -69,7 +70,12 @@ class HexClient:
         path: str,
         **kwargs: Any,
     ) -> httpx.Response:
-        """Make a request to the API."""
+        """Make a request to the API.
+
+        Returns:
+            httpx.Response: The response from the API.
+
+        """
         response = self._client.request(method, path, **kwargs)
 
         if response.status_code >= 400:
@@ -78,7 +84,17 @@ class HexClient:
         return response
 
     def _handle_response_error(self, response: httpx.Response) -> None:
-        """Handle error responses from the API."""
+        """Handle error responses from the API.
+
+        Raises:
+            HexAuthenticationError: For 401 and 403 errors.
+            HexNotFoundError: For 404 errors.
+            HexValidationError: For 400 and 422 errors.
+            HexRateLimitError: For 429 errors.
+            HexServerError: For 5xx errors.
+            HexAPIError: For other errors.
+
+        """
         try:
             error_data = response.json()
         except Exception:
@@ -149,7 +165,14 @@ class HexClient:
         self._client.close()
 
     def __enter__(self) -> "HexClient":
+        """Enter the runtime context for the client.
+
+        Returns:
+            HexClient: Self for use in context manager.
+
+        """
         return self
 
     def __exit__(self, *args: Any) -> None:
+        """Exit the runtime context and close the client."""
         self.close()

@@ -25,6 +25,7 @@ def get_schema_for_endpoint(path, method="GET"):
 
     Raises:
         KeyError: If endpoint not found in spec
+
     """
     method = method.lower()
 
@@ -63,6 +64,10 @@ def resolve_ref(ref):
 
     Returns:
         Resolved schema
+
+    Raises:
+        ValueError: If the reference is not a local reference (doesn't start with #/).
+
     """
     if not ref.startswith("#/"):
         raise ValueError(f"Only local references supported, got: {ref}")
@@ -84,6 +89,7 @@ def resolve_all_refs(schema):
 
     Returns:
         Schema with all $refs resolved
+
     """
     if isinstance(schema, dict):
         if "$ref" in schema:
@@ -112,6 +118,7 @@ def handle_nullable_schema(schema):
 
     Returns:
         Schema with proper null handling
+
     """
     schema = schema.copy()
 
@@ -140,7 +147,7 @@ def handle_nullable_schema(schema):
 
 
 def validate_against_spec(endpoint, method="GET", response_code=None):
-    """Decorator to validate mock data against OpenAPI schema.
+    """Validate mock data against OpenAPI schema.
 
     Args:
         endpoint: OpenAPI endpoint path
@@ -149,6 +156,7 @@ def validate_against_spec(endpoint, method="GET", response_code=None):
 
     Returns:
         Decorator function
+
     """
 
     def decorator(mock_data_func):
@@ -196,6 +204,7 @@ def get_error_schema(status_code):  # noqa: ARG001
 
     Returns:
         Error response schema
+
     """
     # Most error responses follow a common schema in Hex API
     # This is a simplified version - adjust based on actual API
@@ -220,7 +229,7 @@ def get_error_schema(status_code):  # noqa: ARG001
 
 
 def validate_request_params(endpoint, method="GET"):  # noqa: ARG001
-    """Decorator to validate request parameters against OpenAPI schema.
+    """Validate request parameters against OpenAPI schema.
 
     Args:
         endpoint: OpenAPI endpoint path
@@ -228,6 +237,7 @@ def validate_request_params(endpoint, method="GET"):  # noqa: ARG001
 
     Returns:
         Decorator function
+
     """
 
     def decorator(test_func):

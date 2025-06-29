@@ -6,7 +6,12 @@ from typing import Any
 
 
 def find_project_root(start_path: Path | None = None) -> Path | None:
-    """Find the project root by looking for .git or pyproject.toml."""
+    """Find the project root by looking for .git or pyproject.toml.
+
+    Returns:
+        Path | None: Path to project root if found, None otherwise.
+
+    """
     current = Path(start_path) if start_path else Path.cwd()
 
     while current != current.parent:
@@ -18,7 +23,12 @@ def find_project_root(start_path: Path | None = None) -> Path | None:
 
 
 def load_mcp_config(path: Path | None = None) -> dict[str, Any]:
-    """Load .mcp.json configuration from project root."""
+    """Load .mcp.json configuration from project root.
+
+    Returns:
+        dict[str, Any]: Loaded configuration or empty dict if not found.
+
+    """
     if not path:
         project_root = find_project_root()
         if not project_root:
@@ -36,7 +46,12 @@ def load_mcp_config(path: Path | None = None) -> dict[str, Any]:
 
 
 def save_mcp_config(config: dict[str, Any], path: Path | None = None) -> None:
-    """Save .mcp.json configuration to project root."""
+    """Save .mcp.json configuration to project root.
+
+    Raises:
+        ValueError: If project root cannot be found when path is not provided.
+
+    """
     if not path:
         project_root = find_project_root()
         if not project_root:
@@ -49,7 +64,12 @@ def save_mcp_config(config: dict[str, Any], path: Path | None = None) -> None:
 
 
 def get_hex_toolkit_mcp_config() -> dict[str, Any]:
-    """Get the Hex Toolkit MCP server configuration for .mcp.json."""
+    """Get the Hex Toolkit MCP server configuration for .mcp.json.
+
+    Returns:
+        dict[str, Any]: Configuration dict for Hex Toolkit MCP server.
+
+    """
     return {
         "mcpServers": {
             "hex-toolkit": {
@@ -65,7 +85,12 @@ def get_hex_toolkit_mcp_config() -> dict[str, Any]:
 
 
 def add_to_project_mcp_config() -> bool:
-    """Add Hex Toolkit to project's .mcp.json file."""
+    """Add Hex Toolkit to project's .mcp.json file.
+
+    Returns:
+        bool: True if configuration was added, False if already exists.
+
+    """
     config = load_mcp_config()
 
     # Initialize mcpServers if not present
@@ -91,7 +116,12 @@ def add_to_project_mcp_config() -> bool:
 
 
 def remove_from_project_mcp_config() -> bool:
-    """Remove Hex Toolkit from project's .mcp.json file."""
+    """Remove Hex Toolkit from project's .mcp.json file.
+
+    Returns:
+        bool: True if configuration was removed, False if not found.
+
+    """
     config = load_mcp_config()
 
     if "mcpServers" in config and "hex-toolkit" in config["mcpServers"]:

@@ -44,7 +44,15 @@ app.add_typer(mcp_app, name="mcp")
 
 
 def get_client():
-    """Get an authenticated Hex client instance."""
+    """Get an authenticated Hex client instance.
+
+    Returns:
+        HexClient: An authenticated client instance.
+
+    Raises:
+        typer.Exit: If HEX_API_KEY environment variable is not set.
+
+    """
     api_key = os.getenv("HEX_API_KEY")
     if not api_key:
         console.print("[red]Error: HEX_API_KEY environment variable not set[/red]")
@@ -55,7 +63,15 @@ def get_client():
 
 
 def _parse_sort_option(sort: str | None) -> tuple[SortBy | None, SortDirection | None]:
-    """Parse sort option and return sort_by and sort_direction."""
+    """Parse sort option and return sort_by and sort_direction.
+
+    Returns:
+        tuple[SortBy | None, SortDirection | None]: Parsed sort field and direction.
+
+    Raises:
+        typer.Exit: If sort field is invalid.
+
+    """
     if not sort:
         return None, None
 
@@ -99,7 +115,12 @@ def _search_projects(
     sort_by: SortBy | None,
     sort_direction: SortDirection | None,
 ) -> list[Project]:
-    """Search for projects by name or description."""
+    """Search for projects by name or description.
+
+    Returns:
+        list[Project]: List of projects matching the search criteria.
+
+    """
     projects: list[Project] = []
     after_cursor = None
     search_lower = search.lower().strip()
@@ -156,7 +177,12 @@ def _search_projects(
 
 
 def _get_column_value(project: Project, col_key: str) -> str:
-    """Extract column value from project data."""
+    """Extract column value from project data.
+
+    Returns:
+        str: The formatted value for the specified column.
+
+    """
     # Use a mapping to reduce complexity
     simple_getters: dict[str, Callable[[Project], str]] = {
         "id": lambda p: str(p.id),
@@ -190,7 +216,12 @@ def _build_project_table(
     columns: str | None,
     search: str | None,
 ) -> Table:
-    """Build a Rich table for displaying projects."""
+    """Build a Rich table for displaying projects.
+
+    Returns:
+        Table: A Rich Table configured for displaying project information.
+
+    """
     # Parse columns option
     if columns:
         selected_columns = [col.strip().lower() for col in columns.split(",")]
@@ -223,9 +254,7 @@ def _build_project_table(
 
     for project in projects:
         # Build row data based on selected columns
-        row_data = []
-        for col_key in selected_columns:
-            row_data.append(_get_column_value(project, col_key))
+        row_data = [_get_column_value(project, col_key) for col_key in selected_columns]
         table.add_row(*row_data)
 
     return table
@@ -255,7 +284,12 @@ def list_projects(
         "Fetches all projects and filters locally.",
     ),
 ):
-    """List all viewable projects."""
+    """List all viewable projects.
+
+    Raises:
+        typer.Exit: If there's an error listing projects.
+
+    """
     try:
         client = get_client()
 
@@ -604,7 +638,12 @@ def get_project(
     project_id: str = typer.Argument(help="Unique ID for the project"),
     include_sharing: bool = typer.Option(False, help="Include sharing information"),
 ):
-    """Get metadata about a single project."""
+    """Get metadata about a single project.
+
+    Raises:
+        typer.Exit: If there's an error getting the project.
+
+    """
     try:
         client = get_client()
         project = client.projects.get(project_id, include_sharing=include_sharing)
@@ -640,7 +679,12 @@ def get_project(
 
 
 def _format_timestamp(timestamp: str | datetime) -> str:
-    """Format ISO timestamp to a more readable format."""
+    """Format ISO timestamp to a more readable format.
+
+    Returns:
+        str: Formatted timestamp string or 'N/A' if timestamp is None.
+
+    """
     if not timestamp:
         return "N/A"
 
@@ -680,7 +724,12 @@ def _format_timestamp(timestamp: str | datetime) -> str:
 
 
 def _format_access_level(access: str) -> str:
-    """Format access level with color."""
+    """Format access level with color.
+
+    Returns:
+        str: Colored access level string.
+
+    """
     access_colors = {
         "NONE": "[red]None[/red]",
         "APP_ONLY": "[yellow]App Only[/yellow]",
@@ -707,7 +756,12 @@ def run_project(
         5, help="Polling interval in seconds (when --wait)"
     ),
 ):
-    """Trigger a run of the latest published version of a project."""
+    """Trigger a run of the latest published version of a project.
+
+    Raises:
+        typer.Exit: If there's an error running the project.
+
+    """
     try:
         client = get_client()
 
@@ -770,7 +824,12 @@ def get_run_status(
     project_id: str = typer.Argument(help="Unique ID for the project"),
     run_id: str = typer.Argument(help="Unique ID for the run"),
 ):
-    """Get the status of a project run."""
+    """Get the status of a project run.
+
+    Raises:
+        typer.Exit: If there's an error getting run status.
+
+    """
     try:
         client = get_client()
         status = client.runs.get_status(project_id, run_id)
@@ -805,7 +864,12 @@ def list_runs(
     offset: int = typer.Option(0, help="Number of runs to skip"),
     status: str | None = typer.Option(None, help="Filter by run status"),
 ):
-    """Get the status of API-triggered runs for a project."""
+    """Get the status of API-triggered runs for a project.
+
+    Raises:
+        typer.Exit: If there's an error listing runs.
+
+    """
     try:
         client = get_client()
 
@@ -888,7 +952,12 @@ def cancel_run(
     run_id: str = typer.Argument(help="Unique ID for the run"),
     confirm: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation"),
 ):
-    """Cancel a run that was invoked via the API."""
+    """Cancel a run that was invoked via the API.
+
+    Raises:
+        typer.Exit: If there's an error canceling the run.
+
+    """
     try:
         if not confirm:
             confirm = typer.confirm(f"Are you sure you want to cancel run {run_id}?")
@@ -910,7 +979,12 @@ def cancel_run(
 
 
 def _format_status(status: str | None) -> str:
-    """Format run status with color."""
+    """Format run status with color.
+
+    Returns:
+        str: Colored status string.
+
+    """
     if not status:
         return "N/A"
 
@@ -976,7 +1050,12 @@ def mcp_serve(
     port: int = typer.Option(8080, help="Port for SSE transport"),
     host: str = typer.Option("127.0.0.1", help="Host for SSE transport"),
 ):
-    """Run the Hex Toolkit MCP server."""
+    """Run the Hex Toolkit MCP server.
+
+    Raises:
+        typer.Exit: If API key is not set or server fails to start.
+
+    """
     try:
         # Check for API key
         api_key = os.getenv("HEX_API_KEY")
@@ -1027,7 +1106,12 @@ def mcp_install(
         False, help="Force installation even if already configured"
     ),
 ):
-    """Install the Hex Toolkit MCP server for Claude Desktop and/or Claude Code."""
+    """Install the Hex Toolkit MCP server for Claude Desktop and/or Claude Code.
+
+    Raises:
+        typer.Exit: If installation fails.
+
+    """
     try:
         # Import here to avoid circular imports
         from hex_toolkit.mcp.installer import MCPInstaller
@@ -1049,7 +1133,12 @@ def mcp_uninstall(
         "user", help="Scope for Claude Code: local, project, user"
     ),
 ):
-    """Remove the Hex Toolkit MCP server configuration."""
+    """Remove the Hex Toolkit MCP server configuration.
+
+    Raises:
+        typer.Exit: If uninstallation fails.
+
+    """
     try:
         # Import here to avoid circular imports
         from hex_toolkit.mcp.installer import MCPInstaller
@@ -1064,7 +1153,12 @@ def mcp_uninstall(
 
 @mcp_app.command("status")
 def mcp_status():
-    """Check the status of Hex Toolkit MCP server installation."""
+    """Check the status of Hex Toolkit MCP server installation.
+
+    Raises:
+        typer.Exit: If status check fails.
+
+    """
     try:
         # Import here to avoid circular imports
         from hex_toolkit.mcp.installer import MCPInstaller
@@ -1082,7 +1176,12 @@ def main(
     ctx: typer.Context,
     version: bool = typer.Option(False, "--version", "-v", help="Show version"),
 ):
-    """Hex Toolkit CLI - Manage projects and runs via command line."""
+    """Hex Toolkit CLI - Manage projects and runs via command line.
+
+    Raises:
+        typer.Exit: If version flag is provided (exits with code 0).
+
+    """
     if version:
         console.print(f"hex-toolkit version {__version__}")
         raise typer.Exit()

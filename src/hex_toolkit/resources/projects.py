@@ -26,6 +26,7 @@ class ProjectsResource(BaseResource):
 
         Returns:
             Project details
+
         """
         params = {"includeSharing": include_sharing}
         data = self._get(f"/v1/projects/{project_id}", params=params)
@@ -68,6 +69,7 @@ class ProjectsResource(BaseResource):
 
         Returns:
             ProjectList with projects and pagination info
+
         """
         params: dict[str, Any] = {
             "includeArchived": include_archived,
@@ -122,6 +124,7 @@ class ProjectsResource(BaseResource):
 
         Returns:
             ProjectRunResponse with run information
+
         """
         request_data = {}
         if input_params:

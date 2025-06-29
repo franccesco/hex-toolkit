@@ -136,5 +136,5 @@ class InvalidParam(HexBaseModel):
 class InvalidParamResponse(TraceInfo):
     """Response for invalid parameters."""
 
-    invalid: list[InvalidParam] = []
-    not_found: list[str] = Field([], alias="notFound")
+    invalid: list[InvalidParam] = Field(default_factory=list)
+    not_found: list[str] = Field(default_factory=list, alias="notFound")

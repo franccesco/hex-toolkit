@@ -43,6 +43,6 @@ class SemanticModelsSyncResponse(HexBaseModel):
     """Response from semantic model sync."""
 
     trace_id: str = Field(..., alias="traceId")
-    warnings: list[str] = []
-    skipped: dict[str, Any] = {}
+    warnings: list[str] = Field(default_factory=list)
+    skipped: dict[str, Any] = Field(default_factory=dict)
     debug: SemanticModelDebugInfo | None = None

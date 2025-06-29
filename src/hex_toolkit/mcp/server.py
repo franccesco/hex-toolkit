@@ -74,7 +74,15 @@ mcp_server = FastMCP("hex-toolkit")
 
 
 def get_hex_client() -> HexClient:
-    """Get an authenticated Hex client instance."""
+    """Get an authenticated Hex client instance.
+
+    Returns:
+        HexClient: An authenticated client instance.
+
+    Raises:
+        ValueError: If HEX_API_KEY environment variable is not set.
+
+    """
     api_key = os.getenv("HEX_API_KEY")
     if not api_key:
         raise ValueError("HEX_API_KEY environment variable not set")
@@ -85,10 +93,13 @@ def get_hex_client() -> HexClient:
 
 @mcp_server.tool()
 async def hex_list_projects(params: ListProjectsParams) -> dict[str, Any]:
-    """
-    List Hex projects with optional filtering and search.
+    """List Hex projects with optional filtering and search.
 
     Returns a list of projects with their metadata including ID, name, status, owner, and timestamps.
+
+    Returns:
+        dict[str, Any]: Dictionary containing success status and project list or error message.
+
     """
     try:
         client = get_hex_client()
@@ -170,11 +181,14 @@ async def hex_list_projects(params: ListProjectsParams) -> dict[str, Any]:
 
 @mcp_server.tool()
 async def hex_get_project(params: GetProjectParams) -> dict[str, Any]:
-    """
-    Get detailed metadata about a specific Hex project.
+    """Get detailed metadata about a specific Hex project.
 
     Returns comprehensive project information including status, timestamps, analytics,
     schedules, and optionally sharing permissions.
+
+    Returns:
+        dict[str, Any]: Dictionary containing success status and project data or error message.
+
     """
     try:
         client = get_hex_client()
@@ -195,10 +209,13 @@ async def hex_get_project(params: GetProjectParams) -> dict[str, Any]:
 
 @mcp_server.tool()
 async def hex_run_project(params: RunProjectParams) -> dict[str, Any]:
-    """
-    Trigger a run of the latest published version of a Hex project.
+    """Trigger a run of the latest published version of a Hex project.
 
     Returns run information including run ID and URLs to monitor the execution.
+
+    Returns:
+        dict[str, Any]: Dictionary containing success status and run information or error message.
+
     """
     try:
         client = get_hex_client()
@@ -231,11 +248,14 @@ async def hex_run_project(params: RunProjectParams) -> dict[str, Any]:
 
 @mcp_server.tool()
 async def hex_get_run_status(params: RunStatusParams) -> dict[str, Any]:
-    """
-    Get the current status of a Hex project run.
+    """Get the current status of a Hex project run.
 
     Returns status information including state (PENDING, RUNNING, COMPLETED, FAILED, etc.),
     timestamps, and any error messages.
+
+    Returns:
+        dict[str, Any]: Dictionary containing success status and run status or error message.
+
     """
     try:
         client = get_hex_client()
@@ -259,10 +279,13 @@ async def hex_get_run_status(params: RunStatusParams) -> dict[str, Any]:
 
 @mcp_server.tool()
 async def hex_cancel_run(params: CancelRunParams) -> dict[str, Any]:
-    """
-    Cancel a running Hex project execution.
+    """Cancel a running Hex project execution.
 
     Returns confirmation of the cancellation request.
+
+    Returns:
+        dict[str, Any]: Dictionary containing success status and cancellation confirmation or error message.
+
     """
     try:
         client = get_hex_client()
@@ -288,10 +311,13 @@ async def hex_list_runs(
     offset: int = 0,
     status_filter: str | None = None,
 ) -> dict[str, Any]:
-    """
-    List recent runs for a Hex project.
+    """List recent runs for a Hex project.
 
     Returns a list of runs with their status, timestamps, and duration.
+
+    Returns:
+        dict[str, Any]: Dictionary containing success status and runs list or error message.
+
     """
     try:
         client = get_hex_client()
@@ -322,7 +348,12 @@ async def hex_list_runs(
 # Add resources for project information
 @mcp_server.resource("projects://list")
 async def list_projects_resource() -> str:
-    """Get a list of all Hex projects."""
+    """Get a list of all Hex projects.
+
+    Returns:
+        str: Formatted list of projects with their details.
+
+    """
     result = await hex_list_projects(ListProjectsParams())
     if result["success"]:
         projects = result["projects"]
@@ -341,7 +372,12 @@ async def list_projects_resource() -> str:
 
 @mcp_server.resource("project://{project_id}")
 async def get_project_resource(project_id: str) -> str:
-    """Get detailed information about a specific project."""
+    """Get detailed information about a specific project.
+
+    Returns:
+        str: Formatted project details including metadata and sharing info.
+
+    """
     result = await hex_get_project(GetProjectParams(project_id=project_id))
     if result["success"]:
         return json.dumps(result["project"], indent=2)
@@ -352,7 +388,12 @@ async def get_project_resource(project_id: str) -> str:
 # Add helpful prompts
 @mcp_server.prompt()
 async def list_my_projects() -> list[dict[str, str]]:
-    """Prompt to list all Hex projects."""
+    """Prompt to list all Hex projects.
+
+    Returns:
+        list[dict[str, str]]: List containing the prompt message.
+
+    """
     return [
         {
             "role": "user",
@@ -363,7 +404,12 @@ async def list_my_projects() -> list[dict[str, str]]:
 
 @mcp_server.prompt()
 async def run_project_prompt() -> list[dict[str, str]]:
-    """Prompt to run a Hex project."""
+    """Prompt to run a Hex project.
+
+    Returns:
+        list[dict[str, str]]: List containing the prompt message.
+
+    """
     return [
         {
             "role": "user",
@@ -374,7 +420,12 @@ async def run_project_prompt() -> list[dict[str, str]]:
 
 @mcp_server.prompt()
 async def check_running_projects() -> list[dict[str, str]]:
-    """Prompt to check on running projects."""
+    """Prompt to check on running projects.
+
+    Returns:
+        list[dict[str, str]]: List containing the prompt message.
+
+    """
     return [
         {
             "role": "user",
